@@ -37,7 +37,7 @@
 #include <gmodule.h>
 // Main entry point for this example
 //
-in t true = 1;
+int true = 1;
 int false = 0;
 int error = -1;
 
@@ -51,32 +51,34 @@ main(int argc, char *argv[])
 
   void free_data(gpointer data)
   {
-    printf("freeing: %s %p\n", (char *)data, data);
+    //printf("freeing: %s %p\n", (char *)data, data);
     free(data);
   }
+  //hashtable per i valori associati alle variabili
   GHashTable *valuesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
-
+  //hashtable per i tipi delle variabili
   GHashTable *typesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
 
-  void hashInsert(char *keyChar, gpointer valueChar, GHashTable* hashTable)
+  //funzione per inserire chiave e valore nella hashtable scelta
+  void hashInsert(char *keyChar, gpointer valueChar, GHashTable *hashTable)
   {
-
     gchar *key = g_strdup(keyChar);
     gchar *value = g_strdup(valueChar);
 
     if (!g_hash_table_contains(hashTable, (gconstpointer)key))
     {
-      printf("first insert of variable\n");
+      //printf("first insert of variable\n");
       g_hash_table_insert(hashTable, key, value);
     }
     else
     {
-      printf("value modified");
+      //printf("value modified\n");
       g_hash_table_insert(hashTable, key, value);
     }
   }
 
-  gpointer hashGetVaue(char *key, GHashTable* hashTable)
+  //funzione che ritorna il valore della chiave riportata nella hashtable
+  char *hashGetVaue(char *key, GHashTable *hashTable)
   {
     if (!g_hash_table_contains(hashTable, (gconstpointer)key))
     {
@@ -87,12 +89,14 @@ main(int argc, char *argv[])
     {
       gpointer value = g_hash_table_lookup(hashTable, (gconstpointer)key);
       if (value != NULL)
-        return value;
+      {
+        return (char *)value;
+      }
       else
         return NULL;
     }
   }
-
+  /*
   struct Scope
   {
     struct Scope *parent;
@@ -104,8 +108,137 @@ main(int argc, char *argv[])
 
   struct Scope *head = NULL;
   struct Scope *temp = NULL;
+*/
 
-  void *evaluate(pANTLR3_BASE_TREE tree)
+  void inputString()
+  {
+    char userInput1[50];
+    char *pUserInput1 = userInput1;
+    char userInput2[25];
+    char *pUserInput2 = userInput2;
+    char userInput3[25];
+    char *pUserInput3 = userInput3;
+    while (strcmp(pUserInput2, "n") != 0)
+    {
+      printf("enter a command (h for commands)\n");
+      fgets(userInput1, 49, stdin);
+      //printf("fgets: %s\n", userInput1);
+      sscanf(userInput1, "%s %s", pUserInput2, pUserInput3);
+      //printf("input1: %s\n", userInput1);
+      //printf("input2: %s\n", userInput2);
+      //printf("input3: %s\n", userInput3);
+
+      if (strcmp(pUserInput2, "n") == 0)
+      {
+        printf("next line:\n");
+        //temp = temp->next;
+        //printf("istruction %s\n", temp->latest);
+      }
+      else if (strcmp(pUserInput2, "h") == 0)
+      {
+        printf("'n' for next instruction\n");
+        printf("'print'+ 'var name' to print variable name and type\n\n");
+        //temp = temp->prev;
+        //printf("istruction %s\n", temp->latest);
+      }
+      else if (strcmp(pUserInput2, "p") == 0)
+      {
+        printf("input p\n");
+        //temp = temp->prev;
+        //printf("istruction %s\n", temp->latest);
+      }
+      else if (pUserInput1[0] == 's' && userInput1[1] == ' ')
+      {
+        //pUserInput = pUserInput + 2;
+        printf("userinput +2: %s\n", userInput1 + 2);
+        // search in Scope for variable
+      }
+      else if (strcmp(pUserInput2, "print") == 0 )
+      {
+        char *var;
+        char *varType;
+        if (userInput3[0] != '\0')
+        {
+          var = hashGetVaue(userInput3, valuesTable);
+          varType = hashGetVaue(userInput3, typesTable);
+
+          printf("variable %s:\n type: %s\n value %s\n", userInput3, varType, var);
+        }
+      }
+      else
+      {
+        printf("comando non riconosciuto\n");
+      }
+    }
+  }
+
+  //stampa il la riga da cui viene il token e il suo numero nel file
+  void printLine(pANTLR3_COMMON_TOKEN token)
+  {
+    char *line = (char *)token->lineStart;
+    int i = 0;
+    int lineNumber = (int)token->line;
+    printf("line %d: ", lineNumber);
+    while (line[i] != ';' && line[i] != '{')
+    {
+      if (line[i] == '\t')
+      {
+        continue;
+      }
+      printf("%c", line[i]);
+      i = i + 1;
+    }
+    printf("\n\n");
+  }
+
+  // funzione che attraversa l'albero ed esegue le funzioni associate in base al tipo di token
+  // che incontra
+
+  int numberEvaluator(pANTLR3_BASE_TREE tree){
+    pANTLR3_COMMON_TOKEN tok = tree->getToken(tree);
+    if (tok){
+      switch (tok->type)
+      {
+      case INT:
+      {
+        //printf("token data int: %s\n", &tok->input->nextChar);
+        const char *s = tree->getText(tree)->chars;
+        int value = atoi(s);
+        return value;
+      }
+      case ID:
+      {
+        char *var = tree->getText(tree)->chars;
+        //check type
+        int value = atoi(hashGetVaue(var, valuesTable));
+        return value;
+      }
+      case PLUS:
+      {
+        return numberEvaluator(tree->getChild(tree, 0)) + numberEvaluator(tree->getChild(tree, 1));
+      }
+      case MINUS:
+      {
+        return numberEvaluator(tree->getChild(tree, 0)) - numberEvaluator(tree->getChild(tree, 1));
+      }
+      case MULT:
+      {
+        return numberEvaluator(tree->getChild(tree, 0)) * numberEvaluator(tree->getChild(tree, 1));
+      }
+      case DIVI:
+      {
+        return numberEvaluator(tree->getChild(tree, 0)) / numberEvaluator(tree->getChild(tree, 1));
+      }
+      case REST:
+      {
+        return numberEvaluator(tree->getChild(tree, 0)) % numberEvaluator(tree->getChild(tree, 1));
+      }
+
+    }
+
+  }
+
+  int evaluate(pANTLR3_BASE_TREE tree)
   {
     pANTLR3_COMMON_TOKEN tok = tree->getToken(tree);
     if (tok)
@@ -114,7 +247,19 @@ main(int argc, char *argv[])
       {
       case INT:
       {
-
+        //printf("token data int: %s\n", &tok->input->nextChar);
+        const char *s = tree->getText(tree)->chars;
+        int value = atoi(s);
+        return value;
+      }
+      case CHARACTER_LITERAL:
+      {
+        const char *s = tree->getText(tree)->chars;
+        int value = atoi(s);
+        return value;
+      }
+      case STRING_LITERAL:
+      {
         const char *s = tree->getText(tree)->chars;
         int value = atoi(s);
         return value;
@@ -122,62 +267,78 @@ main(int argc, char *argv[])
       case ID:
       {
         char *var = tree->getText(tree)->chars;
-        int *pValue = (int *)malloc(sizeof(int));
-        pValue = (int*)hashGetVaue(var, valuesTable);
-        printf("pvalue: %d\n", *pValue);
-        return pValue;
+        //check type
+        int value = atoi(hashGetVaue(var, valuesTable));
+        return value;
       }
       case EQEQ:
       {
-        int *firstValue = (int *)evaluate(tree->getChild(tree, 0));
-        int *secondValue = (int *)evaluate(tree->getChild(tree, 1));
-        if (*firstValue == *secondValue)
+        int firstValue = (int)evaluate(tree->getChild(tree, 0));
+        int secondValue = (int)evaluate(tree->getChild(tree, 1));
+        printLine(tok);
+        inputString();
+        if (firstValue == secondValue)
         {
-          free(firstValue);
-          free(secondValue);
-          return pTrue;
+          return true;
         }
         else
         {
-          free(firstValue);
-          free(secondValue);
-          return pFalse;
+          return false;
+        }
+      }
+      case NEQ:
+      {
+        int firstValue = (int)evaluate(tree->getChild(tree, 0));
+        int secondValue = (int)evaluate(tree->getChild(tree, 1));
+        printLine(tok);
+        inputString();
+        if (firstValue != secondValue)
+        {
+          return true;
+        }
+        else
+        {
+          return false;
         }
       }
       case OPLT:
       {
-        int *firstValue = (int *)evaluate(tree->getChild(tree, 0));
-        int *secondValue = (int *)evaluate(tree->getChild(tree, 1));
-        if (*firstValue < *secondValue)
+        int firstValue =  evaluate(tree->getChild(tree, 0));
+        int secondValue = evaluate(tree->getChild(tree, 1));
+        printLine(tok);
+        inputString();
+        if (firstValue < secondValue)
         {
-          free(firstValue);
-          free(secondValue);
-          return pTrue;
+          return true;
         }
         else
         {
-          free(firstValue);
-          free(secondValue);
-          return pFalse;
+          return false;
         }
       }
-      case PLUS:{
-        int *firstVal = (int *)(evaluate(tree->getChild(tree, 0)));
-        int *secVal = (int *)(evaluate(tree->getChild(tree, 1)));
-        int *val = (int *)malloc(sizeof(int));
-        *val = *firstVal + *secVal;
-        return val;
-        }
-      /*case MINUS:
+      case PLUS:
+      {
+        return evaluate(tree->getChild(tree, 0)) + evaluate(tree->getChild(tree, 1));
+      }
+      case MINUS:
+      {
         return evaluate(tree->getChild(tree, 0)) - evaluate(tree->getChild(tree, 1));
+      }
       case MULT:
+      {
         return evaluate(tree->getChild(tree, 0)) * evaluate(tree->getChild(tree, 1));
+      }
       case DIVI:
+      {
         return evaluate(tree->getChild(tree, 0)) / evaluate(tree->getChild(tree, 1));
+      }
       case REST:
+      {
         return evaluate(tree->getChild(tree, 0)) % evaluate(tree->getChild(tree, 1));
-      */
-      case VAR_DEF:{
+      }
+
+      case VAR_DEF:
+      {
         //metti la variabile nella tabella hash con valore null
         pANTLR3_BASE_TREE child0 = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
         char *variableType = child0->getText(child0)->chars;
@@ -185,13 +346,16 @@ main(int argc, char *argv[])
         char *variableName = child1->getText(child1)->chars;
         hashInsert(variableName, variableType, typesTable);
         hashInsert(variableName, NULL, valuesTable);
-
-        return variableName;
+        printLine(tok);
+        inputString();
+        return 1;
       }
       case EQ:
       {
         int i = 0;
-        if(tree->getChildCount(tree) == 3){
+        //caso in cui si faccia definizione e assegnamento insieme
+        if (tree->getChildCount(tree) == 3)
+        {
           pANTLR3_BASE_TREE child0 = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
           char *variableType = child0->getText(child0)->chars;
           pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
@@ -199,6 +363,7 @@ main(int argc, char *argv[])
           hashInsert(variableName, variableType, typesTable);
           i = i + 1;
         }
+        //caso di assegnamento
         pANTLR3_BASE_TREE child0 = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
         char *variableName = child0->getText(child0)->chars;
         char *type = hashGetVaue(variableName, typesTable);
@@ -207,88 +372,91 @@ main(int argc, char *argv[])
         if (strcmp(type, "int") == 0)
         {
           pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
-          int *value = (int *)malloc(sizeof(int));
-          value = (int *)evaluate(child1);
-
-          //char strVal[12];
-          //sprintf(strVal, "%d", val);
-          //memory[var] = val;
-          hashInsert(variableName, value, valuesTable);
+          int value = evaluate(child1);
+          char strVal[12];
+          sprintf(strVal, "%d", value);
+          hashInsert(variableName, strVal, valuesTable);
+          printLine(tok);
+          inputString();
           return value;
         }
         else if (strcmp(type, "char") == 0)
         {
           pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
-          int typeLength = strlen(type);
-          char *value = (char *)malloc(sizeof(char) * (typeLength + 1));
-          value = (char *)evaluate(child1);
+          char *value = child1->getText(child1)->chars;
+          //printf("value child1: %s\n",value);
+          //char strVal[12];
+          //sprintf(strVal, "%d", value);
           hashInsert(variableName, value, valuesTable);
-          return value;
+          printLine(tok);
+          inputString();
+          return 1;
         }
-        else{
+        else
+        {
           printf("type not found\n");
-          return NULL;
-          }
+          return error;
+        }
       }
-   case IF_STAT:{
+      case IF_STAT:
+      {
         //caso if senza else
-          pANTLR3_BASE_TREE childIFELSE = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
-          pANTLR3_BASE_TREE childIF = (pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 0);
-          int* ifClausePointer = (int*) evaluate(childIF);
-          int ifClauseValue = *ifClausePointer;
+        pANTLR3_BASE_TREE childIFELSE = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
+        pANTLR3_BASE_TREE childIF = (pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 0);
 
-          //condizione dell'if è vera quindi svolgo il codice nell'if
-          if(ifClauseValue != -1 && ifClauseValue > 0){
-            printf("ifclause %d\n", ifClauseValue);
-            printf("childif %s\n", childIF->toStringTree(childIF)->chars);
-            free(ifClausePointer);
-            return evaluate((pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 1));
-          }
-          else if(tree->getChildCount(tree) > 1){{
+        int ifClauseValue = evaluate(childIF);
+
+        //condizione dell'if è vera quindi svolgo il codice nell'if
+        if (ifClauseValue != -1 && ifClauseValue > 0)
+        {
+          //printf("ifclause %d\n", ifClauseValue);
+          //printf("childif %s\n", childIF->toStringTree(childIF)->chars);
+          return evaluate((pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 1));
+        }
+        else if (tree->getChildCount(tree) > 1)
+        {
+          {
             pANTLR3_BASE_TREE childELSEIF = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
             pANTLR3_BASE_TREE childELSE = (pANTLR3_BASE_TREE)childELSEIF->getChild(childELSEIF, 0);
-            printf("%s\n", childELSE->toStringTree(childELSE)->chars);
-            free(ifClausePointer);
+            //printf("%s\n", childELSE->toStringTree(childELSE)->chars);
             return evaluate(childELSE);
           }
         }
-        
       }
-      case WHI_STAT:{
-        pANTLR3_BASE_TREE conditionalExpr= (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
-        int *conditionalPointer = (int*)evaluate(conditionalExpr);
-        int conditionalExprEval = *conditionalPointer;
-        int* ret;
-        printf("conditionalecpreval: %d\n", conditionalExprEval);
+      case WHI_STAT:
+      {
+        pANTLR3_BASE_TREE conditionalExpr = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
 
-        while (conditionalExprEval != -1 && conditionalExprEval > 0){
-          free(conditionalPointer);
-          printf("conditionalecpreval: %d\n", conditionalExprEval);
-          ret = (int*)evaluate((pANTLR3_BASE_TREE)tree->getChild(tree, 1));
-          free(ret);
-          conditionalPointer = (int*)evaluate(conditionalExpr);
-          conditionalExprEval = *conditionalPointer;
+        int conditionalExprEval = evaluate(conditionalExpr);
+        int ret;
+
+        while (conditionalExprEval != -1 && conditionalExprEval > 0)
+        {
+          //printf("conditionalecpreval: %d\n", conditionalExprEval);
+          ret = evaluate((pANTLR3_BASE_TREE)tree->getChild(tree, 1));
+          conditionalExprEval = evaluate(conditionalExpr);
         }
         return ret;
       }
-      case BLOCK:{
+      case BLOCK:
+      {
         int k = tree->getChildCount(tree);
-        int* r ;
-        for(int i = 0; i < k; i++) {
-            r = evaluate(tree->getChild(tree, i));
-            free(r);
+        int r = 0;
+        for (int i = 0; i < k; i++)
+        {
+          r = evaluate(tree->getChild(tree, i));
         }
         return r;
-    }
+      }
       default:
         printf("Unhandled token: %d\n", tok->type);
-        return pError;
+        return error;
       }
     }
     else
     {
       int k = tree->getChildCount(tree);
-      void* r;
+      int r = 0;
       for (int i = 0; i < k; i++)
       {
         r = evaluate(tree->getChild(tree, i));
@@ -473,17 +641,18 @@ main(int argc, char *argv[])
 
     pANTLR3_BASE_TREE rootTree = SimpleCAST.tree;
 
-    printf("Tree : %s\n", SimpleCAST.tree->toStringTree(SimpleCAST.tree)->chars);
+    printf("Tree : %s\n\n", SimpleCAST.tree->toStringTree(SimpleCAST.tree)->chars);
     nodes = antlr3CommonTreeNodeStreamNewTree(SimpleCAST.tree, ANTLR3_SIZE_HINT); // sIZE HINT WILL SOON BE DEPRECATED!!
 
     // Tree parsers are given a common tree node stream (or your override)
-
     evaluate(rootTree);
-
-    printf("valore di c: %d\n", *(int*) hashGetVaue("c", valuesTable));
-    printf("valore di x: %d\n", *(int*)hashGetVaue("x", valuesTable));
-    printf("valore di z: %p\n", hashGetVaue("z", valuesTable));
-
+    //inputString();
+    /*
+    printf("valore di c: %s\n", hashGetVaue("c", valuesTable));
+    printf("tipo di c: %s\n", hashGetVaue("c", typesTable));
+    printf("valore di x: %s\n", hashGetVaue("x", valuesTable));
+    printf("valore di z: %s\n", hashGetVaue("z", valuesTable));
+  */
     treePsr = SimpleCWalkerNew(nodes);
     //treePsr->program(treePsr);
 

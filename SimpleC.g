@@ -41,11 +41,13 @@ declaration
 
 variable
     :   type declarator ';'	-> ^(VAR_DEF type declarator)
-    |   type declarator EQ expr ';'-> ^(EQ declarator expr)
+    |   type declarator EQ expr ';'-> ^(EQ type declarator expr)
     ;
 
 declarator
-    :   ID 
+    :   ID
+    |   '*' ID
+    |   '&' ID 
     ;
 
 functionHeader
@@ -112,16 +114,18 @@ expr:   condExpr
     ;
 
 condExpr
-    :   aexpr ( ('=='^ | '<'^) aexpr )?
+    :   aexpr ( ('=='^ | '<'^ |'>'^ |'<='^ |'>='^ | '!='^ ) aexpr )?
     ;
 
 aexpr
-    :   atom ( '+'^ atom )*
+    :   atom ( ('+'^ | '-'^ | '%'^ | '*'^ | '/'^) atom )*
     ;
 
 atom
     : ID      
-    | INT      
+    | INT
+    | CHARACTER_LITERAL
+    | STRING_LITERAL
     | '(' expr ')' -> expr
     ; 
 
@@ -130,14 +134,29 @@ INT_TYPE : 'int' ;
 CHAR_TYPE: 'char';
 VOID_TYPE: 'void';
 
+
+
 ID  :   ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*
     ;
 
-INT :	('0'..'9')+
+INT :	('0' | '1'..'9' '0'..'9'*)
+    ;
+
+CHARACTER_LITERAL
+    :   '\'' ( EscapeSequence | ~('\''|'\\') ) '\''
+    ;
+STRING_LITERAL
+    :  '"' ( EscapeSequence | ~('\\'|'"') )* '"'
+    ;
+
+fragment
+EscapeSequence
+    :   '\\' ('b'|'t'|'n'|'f'|'r'|'\"'|'\''|'\\')
     ;
 
 EQ   : '=' ;
 EQEQ : '==' ;
+NEQ : '!=' ;
 OPLT   : '<' ;
 OPGT : '>' ;
 PLUS : '+' ;
