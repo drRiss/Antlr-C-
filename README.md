@@ -37,7 +37,7 @@ Antlr-C- della repository e lanciare il comando:
 infine per compilare il codice .c e creare l'eseguibile, usare il comando:
 
 
-*gcc *.c -g -o m -I/usr/local/include -L /usr/local/lib -l antlr3c `pkg-config --cflags --libs glib-2.0`*
+* gcc *.c -g -o m -I/usr/local/include -L /usr/local/lib -l antlr3c `pkg-config --cflags --libs glib-2.0`*
 
 infine lanciare l'eseguibile 
 
