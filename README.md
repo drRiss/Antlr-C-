@@ -16,8 +16,13 @@ fare clone dalla repository.
 Per far partire il progetto è necessario installare la libreria runtime di c libantlr3c-3.1.3 compresa in questa repository git, per farlo è necessario
 entrare nella cartella libantlr3c-3.1.3 da terminale e lanciare i comandi:
 
+
 * ./configure --enable-64bit*
+
+
 *make*
+
+
 * sudo make install*
 
 https://www.antlr3.org/api/C/build.html per ulteriori dettagli.
@@ -30,8 +35,11 @@ Antlr-C- della repository e lanciare il comando:
 
 infine per compilare il codice .c e creare l'eseguibile, usare il comando:
 
+
 *gcc *.c -g -o m -I/usr/local/include -L /usr/local/lib -l antlr3c `pkg-config --cflags --libs glib-2.0`*
 
 infine lanciare l'eseguibile 
+
+
 *./m*
 
