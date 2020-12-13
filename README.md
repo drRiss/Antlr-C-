@@ -20,7 +20,7 @@ entrare nella cartella libantlr3c-3.1.3 da terminale e lanciare i comandi:
 * ./configure --enable-64bit*
 
 
-*make*
+* make*
 
 
 * sudo make install*
@@ -29,7 +29,8 @@ https://www.antlr3.org/api/C/build.html per ulteriori dettagli.
 
 in seguito, per generare il codice che antlr utilizza per riconoscere le grammatiche e generare gli alberi, spostarsi all'interno della cartella
 Antlr-C- della repository e lanciare il comando:
-*java -jar ../antlr-3.5.2-complete.jar SimpleCWalker.g SimpleC.g*
+
+* java -jar ../antlr-3.5.2-complete.jar SimpleCWalker.g SimpleC.g*
 
 è normale la quantità di warning, per le differenze della libreria runtime C e Java.
 
@@ -41,5 +42,5 @@ infine per compilare il codice .c e creare l'eseguibile, usare il comando:
 infine lanciare l'eseguibile 
 
 
-*./m*
+* ./m*
 
