@@ -50,10 +50,8 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
   void free_data(gpointer data)
   {
-    //printf("freeing: %s %p\n", (char *)data, data);
     g_free(data);
   }
-  //g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
 
   typedef struct Scope
   {
@@ -79,8 +77,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     char *func_ret_type;
     GHashTable *scopeValues;
     GHashTable *scopeTypes;
-    // = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
-
   } fun_def;
 
   void freeList(par_list * head)
@@ -99,7 +95,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
   void free_function(gpointer function)
   {
     fun_def *func = (fun_def *)function;
-    //printf("freeing: %s %p\n", (char *)data, data);
     freeList(func->parameters);
     if (func->scopeValues)
       g_hash_table_unref(func->scopeValues);
@@ -107,11 +102,11 @@ int ANTLR3_CDECL main(int argc, char *argv[])
       g_hash_table_unref(func->scopeTypes);
     g_free(func);
   }
+
   //hashtable per i valori associati alle variabili
   GHashTable *valuesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
   //hashtable per i tipi delle variabili
   GHashTable *typesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
-
   //hashtable per le funzioni
   GHashTable *funcTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_function);
 
@@ -126,12 +121,10 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     }
     if (!g_hash_table_contains(hashTable, (gconstpointer)key))
     {
-      //printf("first insert of variable\n");
       g_hash_table_insert(hashTable, key, value);
     }
     else
     {
-      //printf("value modified\n");
       g_hash_table_insert(hashTable, key, value);
     }
   }
@@ -201,36 +194,24 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     {
       printf("enter a command (h for commands)\n");
       fgets(userInput1, 49, stdin);
-      //printf("fgets: %s\n", userInput1);
       sscanf(userInput1, "%s %s", pUserInput2, pUserInput3);
-      //printf("input1: %s\n", userInput1);
-      //printf("input2: %s\n", userInput2);
-      //printf("input3: %s\n", userInput3);
 
       if (strcmp(pUserInput2, "n") == 0)
       {
         printf("next line:\n");
-        //temp = temp->next;
-        //printf("istruction %s\n", temp->latest);
       }
       else if (strcmp(pUserInput2, "h") == 0)
       {
         printf("'n' for next instruction\n");
         printf("'print'+ 'var name' to print variable name and type\n\n");
-        //temp = temp->prev;
-        //printf("istruction %s\n", temp->latest);
       }
       else if (strcmp(pUserInput2, "p") == 0)
       {
         printf("input p\n");
-        //temp = temp->prev;
-        //printf("istruction %s\n", temp->latest);
       }
       else if (pUserInput1[0] == 's' && userInput1[1] == ' ')
       {
-        //pUserInput = pUserInput + 2;
         printf("userinput +2: %s\n", userInput1 + 2);
-        // search in Scope for variable
       }
       else if (strcmp(pUserInput2, "print") == 0)
       {
@@ -338,7 +319,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
       {
       case INT:
       {
-        //printf("token data int: %s\n", &tok->input->nextChar);
         char *s = tree->getText(tree)->chars;
         int value = atoi(s);
         return value;
@@ -387,8 +367,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     if (!*head)
     {
       *head = newPar;
-      //par_list t = *head;
-      //printf("head naem %s\n", t->name);
       return;
     }
     par_list *temp = *head;
@@ -604,9 +582,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
           {
             pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
             char *value = charEvaluator(child1, valTable, tyTable);
-            //printf("value child1: %s\n",value);
-            //char strVal[12];
-            //sprintf(strVal, "%d", value);
             char *pValue;
             pValue = malloc(sizeof(char));
             printf("value[1]:%c", value[1]);
@@ -626,7 +601,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             value = value + 1;
             printf("value:%s\n", value);
 
-            //printf("value child1: %s\n",value);
             gpointer pValue = g_strdup(value);
             hashInsert(variableName, pValue, valuesTable);
             printLine(tok);
@@ -664,8 +638,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         //condizione dell'if è vera quindi svolgo il codice nell'if
         if (ifClauseValue)
         {
-          //printf("ifclause %d\n", ifClauseValue);
-          //printf("childif %s\n", childIF->toStringTree(childIF)->chars);
           return evaluate((pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 1), valTable, tyTable);
         }
         else if (tree->getChildCount(tree) > 1)
@@ -673,7 +645,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
           {
             pANTLR3_BASE_TREE childELSEIF = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
             pANTLR3_BASE_TREE childELSE = (pANTLR3_BASE_TREE)childELSEIF->getChild(childELSEIF, 0);
-            //printf("%s\n", childELSE->toStringTree(childELSE)->chars);
             return evaluate(childELSE, valTable, tyTable);
           }
         }
@@ -687,7 +658,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
         while (conditionalExprEval)
         {
-          //printf("conditionalecpreval: %d\n", conditionalExprEval);
           evaluate((pANTLR3_BASE_TREE)tree->getChild(tree, 1), valTable, tyTable);
           conditionalExprEval = evaluate(conditionalExpr, valTable, tyTable);
         }
@@ -702,14 +672,12 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         pANTLR3_BASE_TREE body = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
 
         pFun->treeBody = body;
-        printf("body %s\n", body->toStringTree(body)->chars);
         //tipo della funzione
         pANTLR3_BASE_TREE funType = (pANTLR3_BASE_TREE)header->getChild(header, 0);
         char *funTypeChar = funType->getText(funType)->chars;
         pFun->func_ret_type = funTypeChar;
 
-        //nome della funzionen
-
+        //nome della funzione
         pANTLR3_BASE_TREE funName = (pANTLR3_BASE_TREE)header->getChild(header, 1);
         char *funNameChar = funName->getText(funName)->chars;
         pFun->funName = funNameChar;
@@ -782,7 +750,9 @@ int ANTLR3_CDECL main(int argc, char *argv[])
           else if (strcmp(paramType, "char") == 0 || strcmp(paramType, "char*") == 0)
           {
             char *paramValue = charEvaluator((pANTLR3_BASE_TREE)tree->getChild(tree, i), valTable, tyTable);
+            hashInsert(paramName, paramValue, function->scopeValues);
           }
+
             hashInsertChar(paramName, paramType, function->scopeTypes);
           temp = temp->next;
         }
@@ -791,7 +761,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
         return evaluate(function->treeBody, function->scopeValues, function->scopeTypes);
 
-        //implementa il return
       }
       case RET:
       {
@@ -1014,16 +983,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     // Tree parsers are given a common tree node stream (or your override)
     evaluate(rootTree, valuesTable, typesTable);
 
-    //printf("valore di cfun: %s\n",( (fun_def*)hashGetVaue("fun", funcTable))->funName);
-    //printf("valore di cfun ret: %s\n",( (fun_def*)hashGetVaue("fun", funcTable))->func_ret_type);
-    //inputString();
-    /*
-    printf("valore di c: %s\n", hashGetVaue("c", valuesTable));
-    printf("tipo di c: %s\n", hashGetVaue("c", typesTable));
-    printf("valore di x: %s\n", hashGetVaue("x", valuesTable));
-    printf("valore di z: %s\n", hashGetVaue("z", valuesTable));
-  */
-
+    //libero la memoria allocata dinamicamente
     g_hash_table_remove_all(typesTable);
     g_hash_table_remove_all(valuesTable);
     g_hash_table_remove_all(funcTable);
