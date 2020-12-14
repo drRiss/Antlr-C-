@@ -6,10 +6,16 @@ ai fini dell'interpretazione passo-passo del programma, con finalita' di debuggi
 
 
 # how to run
-Inserire il codice C che si vuole testare nel file di nome "input" all'interno della cartella Antlr-C-.
-
 
 fare clone dalla repository.
+
+Inserire il codice C che si vuole testare nel file di nome "input" all'interno della cartella Antlr-C-.
+
+lanciare l'eseguibile da terminale
+* ./m
+
+
+se si vuole modificare la grammatica o un file .c quale il main:
 
 # *from linux*
 
