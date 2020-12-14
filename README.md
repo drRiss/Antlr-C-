@@ -11,7 +11,7 @@ fare clone dalla repository.
 
 Inserire il codice C che si vuole testare nel file di nome "input" all'interno della cartella Antlr-C-.
 
-lanciare l'eseguibile da terminale
+lanciare l'eseguibile da terminale nella cartella Antlr-C-
 * ./m
 
 
