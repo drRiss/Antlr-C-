@@ -110,7 +110,8 @@ int ANTLR3_CDECL main(int argc, char *argv[])
   //hashtable per le funzioni
   GHashTable *funcTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_function);
 
-  //funzione per inserire chiave e valore nella hashtable scelta
+  //funzione per inserire chiave e valore nella hashtable scelta, se la chiave e il valore
+  //sono entrambi char* utilizzare hashInsertChar
   void hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
   {
     gchar *key = g_strdup(keyChar);
@@ -181,7 +182,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
       return NULL;
     }
   }
-
+  //funzione che richiede l'input dell'utente per stampare variabili, andare avanti nelle istruzioni passo passo
   void inputString(GHashTable * valTable, GHashTable * tyTable)
   {
     char userInput1[50];
@@ -276,8 +277,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     }
   }
 
-  // funzione che attraversa l'albero ed esegue le funzioni associate in base al tipo di token
-  // che incontra
+  // funzione che attraversa l'albero ed esegue le funzioni associate al tipo char
   char *charEvaluator(pANTLR3_BASE_TREE tree, GHashTable * valTable, GHashTable * tyTable)
   {
     pANTLR3_COMMON_TOKEN tok = tree->getToken(tree);
@@ -307,6 +307,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     }
   }
 
+  // funzione che attraversa l'albero ed esegue le funzioni associate al tipo int
   int numberEvaluator(pANTLR3_BASE_TREE tree, GHashTable * valTable, GHashTable * tyTable)
   {
     pANTLR3_COMMON_TOKEN tok = tree->getToken(tree);
@@ -357,6 +358,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     }
   }
 
+  //funzione ausiliaria che aggiunge un oggetto par_list alla fine di una lista "head"
   void addEnd(par_list * *head, char *type, char *name)
   {
 
@@ -378,6 +380,10 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
     return;
   }
+
+
+  //funzione principale che attraversa l'albero e gestisce ogni azione
+  int returnValue;
 
   void *evaluate(pANTLR3_BASE_TREE tree, GHashTable * valTable, GHashTable * tyTable)
   {
@@ -451,44 +457,34 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         }
         else
         {
-          return NULL;
+          return pFalse;
         }
       }
       case PLUS:
       {
-        printf("evaluate plus\n");
-        numberEvaluator(tree, valTable, tyTable);
-        return pTrue;
+        returnValue = numberEvaluator(tree, valTable, tyTable);
+        return &returnValue;
       }
       case MINUS:
       {
-        printf("evaluate minus\n");
-
-        numberEvaluator(tree, valTable, tyTable);
-        return pTrue;
+        returnValue = numberEvaluator(tree, valTable, tyTable);
+        return &returnValue;
       }
       case MULT:
       {
-        printf("evaluate mult\n");
-
-        numberEvaluator(tree, valTable, tyTable);
-        return pTrue;
+        returnValue = numberEvaluator(tree, valTable, tyTable);
+        return &returnValue;
       }
       case DIVI:
       {
-        numberEvaluator(tree, valTable, tyTable);
-        printf("evaluate divi\n");
-
-        return pTrue;
+        returnValue = numberEvaluator(tree, valTable, tyTable);
+        return &returnValue;
       }
       case REST:
       {
-        printf("evaluate rest\n");
-
-        numberEvaluator(tree, valTable, tyTable);
-        return pTrue;
+        returnValue = numberEvaluator(tree, valTable, tyTable);
+        return &returnValue;
       }
-
       case VAR_DEF:
       {
         //metti la variabile nella tabella hash con valore null
@@ -512,9 +508,9 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         pANTLR3_BASE_TREE child2 = (pANTLR3_BASE_TREE)tree->getChild(tree, 2);
         char asterisk = '*';
         strncat(variableType, &asterisk, 1);
-        printf("child0: %s  \n", child0->getText(child1)->chars);
-        printf("child1: %s\n", child1->getText(child1)->chars);
-        printf("child2: %s\n", child2->getText(child1)->chars);
+        //printf("child0: %s  \n", child0->getText(child1)->chars);
+        //printf("child1: %s\n", child1->getText(child1)->chars);
+        //printf("child2: %s\n", child2->getText(child1)->chars);
         hashInsertChar(variableName, variableType, typesTable);
         hashInsert(variableName, NULL, valuesTable);
         printLine(child0->getToken(child0));
@@ -575,7 +571,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             char strVal[12];
             int *pValue = malloc(sizeof(int));
             *pValue = value;
-            printf("eq value : %d\n", *pValue);
+            printf("equation value : %d\n", *pValue);
             //sprintf(strVal, "%d", value);
             hashInsert(variableName, pValue, valuesTable);
             printLine(tok);
@@ -601,7 +597,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             char *value = charEvaluator(child1, valTable, tyTable);
             int valueSize = strlen(value);
             value[valueSize - 1] = '\0';
-            printf("value[valueSize -1]:%s\n", value);
             value = value + 1;
             printf("value:%s\n", value);
 
@@ -710,7 +705,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
         while (temp && temp->next)
         {
-          printf("param: %s %s\n", pFun->parameters->type, temp->name);
+          printf("param: %s %s ", pFun->parameters->type, temp->name);
           temp = pFun->parameters->next;
         }
         printf("param: %s %s\n", temp->type, temp->name);
@@ -723,7 +718,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
         char *fNameChar = fName->getText(fName)->chars;
         int nParams = tree->getChildCount(tree);
-        printf("nparams = %d", nParams);
         fun_def *function = (fun_def *)hashGetVaue("fun", funcTable, NULL);
         char* fReturnType = function->func_ret_type;
         if (!function)
@@ -739,7 +733,6 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         char *paramName;
         for (int i = 1; i < nParams; i++)
         {
-          printf("iteration i : %d\n", i); 
           /* metti i parametri nello scope */
           paramType = temp->type;
           paramName = temp->name;
@@ -748,7 +741,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             int *paramValue = malloc(sizeof(int));
             pANTLR3_BASE_TREE paramValueTree = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
             *paramValue = numberEvaluator(paramValueTree, valTable, tyTable);
-            printf("paramtype: %s\n", paramType);
+            printf("paramtype: %s ", paramType);
             printf("paramValue: %d\n", *paramValue);
             hashInsert(paramName, paramValue, function->scopeValues);
           }
