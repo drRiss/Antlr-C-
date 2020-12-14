@@ -11,4 +11,4 @@ int fun(int a, int b){
 int d;
 fun(c,z);
 
-d = fun(c, z);
+d= fun(c, z);

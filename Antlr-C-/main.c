@@ -393,26 +393,22 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         int value = numberEvaluator(tree, valTable, tyTable);
         return pTrue;
       }
-      /*
+    
       case CHARACTER_LITERAL:
       {
-        const char *s = tree->getText(tree)->chars;
-        int value = atoi(s);
-        return value;
+        return tree->getText(tree)->chars;
       }
       case STRING_LITERAL:
       {
-        const char *s = tree->getText(tree)->chars;
-        int value = atoi(s);
-        return value;
+        return tree->getText(tree)->chars;
       }
-    /*      case ID:
+    case ID:
       {
         char *var = tree->getText(tree)->chars;
         //check type
-        int value = atoi(hashGetVaue(var, valuesTable));
-        return value;
-      }*/
+        return hashGetVaue(var, valTable, valuesTable);
+
+      }
       case EQEQ:
       {
         int firstValue = (int)numberEvaluator(tree->getChild(tree, 0), valTable, tyTable);
@@ -560,9 +556,17 @@ int ANTLR3_CDECL main(int argc, char *argv[])
               if (!function)
               {
                 printf("function %s not found\n", funName);
+                return pError;
               }
-              value = *(int *)evaluate(child1, valTable, tyTable);
+              char* fReturnType = function->func_ret_type;
+              if(strcmp(fReturnType, "int") == 0){
+                value = *(int *)evaluate(child1, valTable, tyTable);
               printf("func eq value: %d\n", value);
+              }
+              else if(strcmp(fReturnType, "int*") == 0){
+                int* pValue = (int *)evaluate(child1, valTable, tyTable);}
+              else if(strcmp(fReturnType, "char*") || strcmp(fReturnType, "char")){
+                char* pValue = (char *)evaluate(child1, valTable, tyTable);}
             }
             else
             {
@@ -576,7 +580,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             hashInsert(variableName, pValue, valuesTable);
             printLine(tok);
             inputString(valTable, tyTable);
-            return pTrue;
+            return pValue;
           }
           else if (strcmp(type, "char") == 0)
           {
@@ -721,6 +725,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         int nParams = tree->getChildCount(tree);
         printf("nparams = %d", nParams);
         fun_def *function = (fun_def *)hashGetVaue("fun", funcTable, NULL);
+        char* fReturnType = function->func_ret_type;
         if (!function)
         {
           printf("function %s not found\n", fNameChar);
@@ -758,8 +763,10 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         }
         printLine(tok);
         inputString(valTable, tyTable);
-
-        return evaluate(function->treeBody, function->scopeValues, function->scopeTypes);
+        if(strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
+          return (int*)evaluate(function->treeBody, function->scopeValues, function->scopeTypes);
+        if(strcmp(fReturnType, "char")== 0 || strcmp(fReturnType, "char*") == 0)
+          return (char*)evaluate(function->treeBody, function->scopeValues, function->scopeTypes);
 
       }
       case RET:
