@@ -6,12 +6,20 @@ ai fini dell'interpretazione passo-passo del programma, con finalita' di debuggi
 
 
 # how to run
-Inserire il codice C che si vuole testare nel file di nome "input" all'interno della cartella Antlr-C-.
-
 
 fare clone dalla repository.
 
-# *from linux*
+Inserire il codice C che si vuole testare nel file di nome "input" all'interno della cartella Antlr-C-.
+
+lanciare l'eseguibile da terminale nella cartella Antlr-C-
+* ./m
+
+
+se si vuole modificare la grammatica o un file .c quale il main e quindi aggiornare l'eseguibile:
+
+# *how to modify executable*
+
+(passaggi necessari per creare un nuovo eseguibile dopo aver modificato la grammaticao un file .c)
 
 Per far partire il progetto è necessario installare la libreria runtime di c libantlr3c-3.1.3 compresa in questa repository git, per farlo è necessario
 entrare nella cartella libantlr3c-3.1.3 da terminale e lanciare i comandi:
