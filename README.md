@@ -15,7 +15,7 @@ lanciare l'eseguibile da terminale nella cartella Antlr-C-
 * ./m
 
 
-se si vuole modificare la grammatica o un file .c quale il main:
+se si vuole modificare la grammatica o un file .c quale il main e quindi aggiornare l'eseguibile:
 
 # *from linux*
 
