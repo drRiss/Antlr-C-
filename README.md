@@ -19,6 +19,8 @@ se si vuole modificare la grammatica o un file .c quale il main e quindi aggiorn
 
 # *from linux*
 
+(passaggi necessari per creare un nuovo eseguibile dopo aver modificato la grammaticao un file .c)
+
 Per far partire il progetto è necessario installare la libreria runtime di c libantlr3c-3.1.3 compresa in questa repository git, per farlo è necessario
 entrare nella cartella libantlr3c-3.1.3 da terminale e lanciare i comandi:
 
