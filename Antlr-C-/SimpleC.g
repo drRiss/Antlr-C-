@@ -12,6 +12,7 @@ tokens
     VAR_DEF;
     ARG_DEF;
     POI_DEF;
+    POI_TYPE;
     FUNC_HDR;
     FUNC_DECL;
     FUNC_DEF;
@@ -45,9 +46,10 @@ declaration
     ;
 
 variable
-    :   type declarator lc=';'	-> ^(VAR_DEF[lc, "VAR_DEF"] type declarator)
+    :   type declarator lc=';'	-> ^(VAR_DEF[$lc, "VAR_DEF"] type declarator)
     |   type declarator EQ expr ';'-> ^(EQ type declarator expr)
-    |   typepointer declarator lc=';' -> ^(POI_DEF[lc, "POI_DEF"] typepointer declarator)
+    |   typepointer declarator lc=';' -> ^(POI_DEF[$lc, "POI_DEF"] typepointer declarator)
+    |   typepointer declarator EQ expr ';'-> ^(EQ typepointer declarator expr)
     ;
 
 declarator
@@ -75,7 +77,7 @@ type
     ;
 
 typepointer
-    : type'*' 
+    : type '*' -> ^(POI_TYPE type)
     ;
 
 block

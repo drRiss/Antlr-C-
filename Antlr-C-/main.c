@@ -500,17 +500,13 @@ int ANTLR3_CDECL main(int argc, char *argv[])
       }
       case POI_DEF:
       {
-        //metti la variabile nella tabella hash con valore null
+        //puntatore e tipo nelle rispettive tabelle hash
         pANTLR3_BASE_TREE child0 = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
         char *variableType = child0->getText(child0)->chars;
-        pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
-        char *variableName = child1->getText(child1)->chars;
         pANTLR3_BASE_TREE child2 = (pANTLR3_BASE_TREE)tree->getChild(tree, 2);
+        char *variableName = child2->getText(child2)->chars;
         char asterisk = '*';
         strncat(variableType, &asterisk, 1);
-        //printf("child0: %s  \n", child0->getText(child1)->chars);
-        //printf("child1: %s\n", child1->getText(child1)->chars);
-        //printf("child2: %s\n", child2->getText(child1)->chars);
         hashInsertChar(variableName, variableType, typesTable);
         hashInsert(variableName, NULL, valuesTable);
         printLine(child0->getToken(child0));
@@ -524,19 +520,33 @@ int ANTLR3_CDECL main(int argc, char *argv[])
         if (tree->getChildCount(tree) == 3)
         {
           pANTLR3_BASE_TREE child0 = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
-          char *variableType = child0->getText(child0)->chars;
+           char *variableType;
+          //caso di una variabile normale
+          if(child0->getChildCount(child0) == 0){
+            variableType = child0->getText(child0)->chars;
+            }
+          //caso di un puntatore
+          else if(child0->getChildCount(child0) == 1){
+            child0 = child0->getChild(child0, 0);
+            variableType = child0->getText(child0)->chars;
+            char asterisk = '*';
+            strncat(variableType, &asterisk, 1);
+          }
           pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, 1);
           char *variableName = child1->getText(child1)->chars;
           hashInsertChar(variableName, variableType, tyTable);
           i = i + 1;
         }
-        //caso di assegnamento
 
+        //caso di assegnamento
         pANTLR3_BASE_TREE child00 = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
         char *variableName = child00->getText(child00)->chars;
         char *type = (char *)hashGetVaue(variableName, tyTable, NULL);
         //string var(getText(getChild(tree, 0)));
-        if (type)
+        if (!type){
+          printf("error, no type found for variable\n");
+          return pError;
+        }
           if (strcmp(type, "int") == 0)
           {
 
@@ -560,9 +570,11 @@ int ANTLR3_CDECL main(int argc, char *argv[])
               printf("func eq value: %d\n", value);
               }
               else if(strcmp(fReturnType, "int*") == 0){
-                int* pValue = (int *)evaluate(child1, valTable, tyTable);}
+                int* pValue = (int *)evaluate(child1, valTable, tyTable);
+                }
               else if(strcmp(fReturnType, "char*") || strcmp(fReturnType, "char")){
-                char* pValue = (char *)evaluate(child1, valTable, tyTable);}
+                char* pValue = (char *)evaluate(child1, valTable, tyTable);
+                }
             }
             else
             {
@@ -754,7 +766,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
             hashInsertChar(paramName, paramType, function->scopeTypes);
           temp = temp->next;
         }
-        printLine(tok);
+        printLine(fName->getToken(fName));
         inputString(valTable, tyTable);
         if(strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
           return (int*)evaluate(function->treeBody, function->scopeValues, function->scopeTypes);
