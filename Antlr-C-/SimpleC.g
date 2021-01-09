@@ -13,6 +13,7 @@ tokens
     ARG_DEF;
     POI_DEF;
     POI_TYPE;
+    UN_OP;
     FUNC_HDR;
     FUNC_DECL;
     FUNC_DEF;
@@ -48,8 +49,11 @@ declaration
 variable
     :   type declarator lc=';'	-> ^(VAR_DEF[$lc, "VAR_DEF"] type declarator)
     |   type declarator EQ expr ';'-> ^(EQ type declarator expr)
+    |   type declarator EQ functionCall -> ^(EQ type declarator functionCall)
     |   typepointer declarator lc=';' -> ^(POI_DEF[$lc, "POI_DEF"] typepointer declarator)
     |   typepointer declarator EQ expr ';'-> ^(EQ typepointer declarator expr)
+    |   typepointer declarator EQ functionCall -> ^(EQ typepointer declarator functionCall)
+
     ;
 
 declarator
@@ -62,7 +66,7 @@ functionHeader
     ;       
 
 functionCall
-    :   declarator lc='(' ( (ID | INT) ( ',' (ID | INT) )* )? ')' ';' ->^(FUNC_CALL[lc, "FUNC_CALL"] declarator ID*  INT* )
+    :   declarator lc='(' (aexpr ( ',' aexpr )* )? ')' ';' -> ^(FUNC_CALL[lc, "FUNC_CALL"] declarator aexpr* )
     ;
 
 formalParameter
@@ -77,7 +81,7 @@ type
     ;
 
 typepointer
-    : type '*' -> ^(POI_TYPE type)
+    : type '*' ->  ^(POI_TYPE type)
     ;
 
 block
@@ -87,6 +91,12 @@ block
             returnStatement?
         '}'
         -> ^(BLOCK[$lc, "BLOCK"] variable* cstat* returnStatement?)
+    ;
+
+returnStatement
+    :
+    | 'return' ';' -> ^(RET)
+    | 'return' expr ';' -> ^(RET expr)
     ;
 
 cstat: forStat
@@ -115,23 +125,18 @@ elseStat
   ;
 
 forStat
-    :   'for' '(' start=assignStat ';' e=expr ';' next=assignStat ')' block
+    :   'for' '(' start=assignStat e=expr ';' next=assignStat ')' block
         -> ^('for' $start $e $next block)
     ;
 
 assignStat
-    :   ID EQ expr -> ^(EQ ID expr)
+    :   ID EQ expr ';'-> ^(EQ ID expr)
     |   ID EQ functionCall -> ^(EQ ID functionCall)
     ;
 
 expr:   condExpr
     ;
 
-returnStatement
-    :
-    | 'return' ';' -> ^(RET)
-    | 'return' expr ';' -> ^(RET expr)
-    ;
 
 condExpr
     :   aexpr ( ('=='^ | '<'^ |'>'^ |'<='^ |'>='^ | '!='^ ) aexpr )?
@@ -143,12 +148,18 @@ aexpr
 
 
 atom
-    : ID      
+    : ID
+    | unaryOperator ID -> ^(UN_OP unaryOperator ID)
     | INT
     | CHARACTER_LITERAL
     | STRING_LITERAL
     | '(' expr ')' -> expr
     ; 
+
+unaryOperator
+    :'&'
+    |'*'
+    ;
 
 FOR : 'for' ;
 

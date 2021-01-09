@@ -1,7 +1,18 @@
 
-char* bb= "bbb";
+int ss = 2;
 
-int fun(int a, int b){
-    int f = a + b;
-    return f;
+int mult(int aa, int b){
+    int c;
+    c = aa + b;
+
+    c = 777;
+    return c;
 }
+
+int z = 8;
+
+int az = mult(ss, z);
+
+ss = 10 ;
+
+ss = 11;
