@@ -1,18 +1,30 @@
 
-int ss = 2;
+int a = 5;
+int b = 6;
 
-int mult(int aa, int b){
-    int c;
-    c = aa + b;
 
-    c = 777;
-    return c;
+int* d = &b;
+
+int sum = 2;
+
+int add(int a){
+    return a+1;
 }
 
-int z = 8;
+int sum(int x, int z){
+    int sum = x + z;
+    return add();
+}
 
-int az = mult(ss, z);
 
-ss = 10 ;
+int c; 
 
-ss = 11;
+int somma = sum(a, b);
+
+
+if(a == *d){
+    a = 7;
+}
+else{
+    a = 8;
+}
