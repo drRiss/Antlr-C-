@@ -11,6 +11,11 @@ int *pFalse = &false;
 int *pError = &error;
 void *returnVal = NULL;
 
+int consecutive = 0;
+int breakpoint = 0;
+int breakpointPassed = 0;
+int run = 0; //viene settato col comando "run" e manda avanti l'esecuzine del programma
+
 void free_data(gpointer data)
 {
   g_free(data);
@@ -19,6 +24,7 @@ void free_data(gpointer data)
   typedef struct ScopesTree
   {
     //fare un puntatore per i figli non è necessario in quanto dal parent non si passa mai ai figli
+    //tocchera invece farlo per poter fare free()
     struct ScopesTree *parent;
 
     GHashTable *scope;
@@ -149,15 +155,11 @@ void free_function(gpointer function)
   g_free(func);
 }
 
-//da fare
+//da fare//
 void freeScopeTree(scope_tree *root)
 {
 }
 
-//hashtable per i valori associati alle variabili
-// GHashTable *valuesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
-//hashtable per le funzioni
-//GHashTable *funcTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_function);
 GHashTable *funcTable = NULL;
 /*  History *isHistory = malloc(sizeof(History));
   isHistory->subTree = NULL;
@@ -215,7 +217,7 @@ void hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
     g_hash_table_insert(hashTable, key, value);
   }
 }
-//globalh non utilizzato da rivedere
+
 void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeTree, History **pHistory, int save)
 {
   History *history = *pHistory;
@@ -235,19 +237,26 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
     pVar->next = pVar;
     pVar->prev = pVar;
     pVar->isPointer = 0;
+    pVar->pointsTo = NULL;
+    pVar->pointsToPos = -1;
+
     //caso in cui la variabile sia di tipo char, bisogna duplicarla perchè non venga persa
-    if (strcmp(type, "char*") == 0 || strcmp(type, "char") == 0)
+    if (!value)
+    {
+
+      pVar->value = NULL;
+    }
+    else if (strcmp(type, "char*") == 0 || strcmp(type, "char") == 0)
     {
       char *valueChar = g_strdup(value);
       pVar->value = (gpointer)valueChar;
-      g_hash_table_insert(scopeTree->scope, key, pVar);
     }
     else if (strcmp(type, "int") == 0)
     {
       pVar->value = (gpointer)value;
-      g_hash_table_insert(scopeTree->scope, key, pVar);
     }
-    else if (strcmp(type, "int*") == 0)
+
+    if (strcmp(type, "int*") == 0)
     {
       pVar->isPointer = 1; //true
       if (value)
@@ -261,8 +270,8 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
       {
         pVar->pointsTo = NULL;
       }
-      g_hash_table_insert(scopeTree->scope, key, pVar);
     }
+    g_hash_table_insert(scopeTree->scope, key, pVar);
   }
   else
   {
@@ -315,6 +324,9 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
   }
   if (save)
     insertWrittenHistory(pHistory, pVar);
+
+
+    var_list* intero = (var_list*)hashGetVaueVar(key, scopeTree, 0, pHistory, 0);
 }
 
 //funzione che ritorna il valore della chiave riportata nella hashtable
@@ -378,7 +390,66 @@ gpointer hashGetVaueVar(char *key, scope_tree *scopeTree, int position, History 
     }
     else
     {
-      printf("value %s not found\n", key);
+      printf("%s value not found\n", key);
+      return NULL;
+    }
+  }
+
+  var_list *valueList = (var_list *)g_hash_table_lookup(scope, (gconstpointer)key);
+  if (save)
+  {
+    if (!history->read)
+    {
+      var_list *tempV = malloc(sizeof(var_list));
+      tempV->name = key;
+      tempV->type = valueList->type;
+      tempV->position = valueList->prev->position;
+      tempV->next = tempV;
+      tempV->prev = tempV;
+      history->read = tempV;
+    }
+    else
+    { //inserisco il valore in coda
+      var_list *tempV = malloc(sizeof(var_list));
+      tempV->name = key;
+      tempV->type = valueList->type;
+      tempV->position = valueList->prev->position;
+      tempV->next = history->read;
+      tempV->prev = history->read->prev;
+      history->read->prev = tempV;
+      tempV->prev->next = tempV;
+    }
+  }
+  return valueList;
+}
+
+gpointer hashGetVaueVarPscope(char *key, scope_tree **pScopeTree, int position, History **pHistory, int save)
+{
+  scope_tree* scopeTree = *pScopeTree;
+  History *history = *pHistory;
+  GHashTable *scope = scopeTree->scope;
+  if (!scopeTree || !scopeTree->scope)
+  {
+    printf("hashGetVaue: hashtable is null\n");
+    return NULL;
+  }
+  //cerco nell'albero se esiste il valore della chiave
+  scope_tree *temp = scopeTree;
+
+  while (!g_hash_table_contains(temp->scope, (gconstpointer)key))
+  {
+    if (temp->parent)
+    {
+      temp = temp->parent;
+
+      if (g_hash_table_contains(temp->scope, (gconstpointer)key))
+      {
+        scope = temp->scope;
+      }
+    }
+    else
+    {
+      printf("%s value not found\n", key);
       return NULL;
     }
   }
@@ -439,9 +510,49 @@ void printLine(pANTLR3_COMMON_TOKEN token)
   }
 }
 
-//funzione che richiede l'input dell'utente per stampare variabili, andare avanti nelle istruzioni passo passo
-void inputString(scope_tree *scope, History **pHistory)
+typedef struct BreakpointList
 {
+  struct BreakpointList *next;
+  int line;
+
+} bp_list;
+
+bp_list *bp_head = NULL;
+
+//funzione che richiede l'input dell'utente per stampare variabili, andare avanti nelle istruzioni passo passo
+void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN token)
+{
+  if (consecutive > 0)
+  {
+    consecutive = consecutive - 1; //sono state richieste n istruzioni consecutive quindi continuo
+    //senza richiedere input
+    return;
+  }
+
+  if (run)
+  {
+    int lineNumber = (int)token->line; //linea attuale raggiunta dal programma
+    int found = 0;                     //flag che si attiva se viene incontrata una linea di un breakpoint
+    if (bp_head)
+    {
+
+      bp_list *temp = bp_head;
+      while (temp->next)
+      { //controllo i breakpoint settati
+        if (temp->next->line == lineNumber)
+        { //caso in cui trovo un breakpoint
+          found = 1;
+          break;
+        }
+        temp = temp->next;
+      }
+    }
+    if (!found)
+    { //se non trovo nessun breakpoint, continuo l'esecuzione
+      return;
+    }
+  }
+
   char userInput1[50];
   char *pUserInput1 = userInput1;
   char userInput2[25];
@@ -456,6 +567,18 @@ void inputString(scope_tree *scope, History **pHistory)
 
     if (strcmp(pUserInput2, "n") == 0)
     {
+      run = 0; //esecuzione passo passo
+      if (pUserInput3)
+      {
+        printf("about to run %s istructions", pUserInput3);
+        
+        //dice di quante istruzioni avanzare
+        consecutive = atoi(pUserInput3);
+        if(consecutive){
+        printf("about to run %d istructions", consecutive);
+        consecutive = consecutive - 1; //tolgo quella che sto per fare
+        }
+      }
       //do nothing, continue with the istructions
 
       History *history = *pHistory;
@@ -466,23 +589,27 @@ void inputString(scope_tree *scope, History **pHistory)
           //printf("--------redoing historyy--------\n");
           evaluate(history->next->subTree, &history->next->scopeTree, pHistory, 1);
           //printf("--------historyy redone--------\n");
-
           history = *pHistory;
         }
       }
       else
         printf("next line:\n");
     }
-    else if (strcmp(pUserInput2, "prev") == 0)
-    {
-    }
     else if (strcmp(pUserInput2, "h") == 0)
     {
       printf("'n' for next instruction\n");
+      printf("'p' for previous instuction\n");
+      printf("'n' + 'int' for 'int' consecutive instructions\n");
+      printf("break + 'int'  for a breakpoint at line 'int'");
+      printf("'remove' + 'int'  to remove a breakpoint at line 'int'");
+      printf("'removeall'  to remove all breakpoints");
+      printf("'run'  to run the program");
       printf("'print'+ 'var name' to print variable name and type\n\n");
     }
     else if (strcmp(pUserInput2, "p") == 0)
     {
+      run = 0; //esecuzione passo passo
+
       History *history = *pHistory;
       if (!history)
       {
@@ -518,11 +645,6 @@ void inputString(scope_tree *scope, History **pHistory)
 
       printLine(history->subTree->getToken(history->subTree));
       printf("input p\n");
-    }
-    //da togliere
-    else if (pUserInput1[0] == 's' && userInput1[1] == ' ')
-    {
-      printf("userinput +2: %s\n", userInput1 + 2);
     }
     else if (strcmp(pUserInput2, "print") == 0)
     {
@@ -573,6 +695,96 @@ void inputString(scope_tree *scope, History **pHistory)
         }
       }
     }
+    else if (strcmp(pUserInput2, "break") == 0)
+    {
+      if (pUserInput3)
+      {
+        breakpoint = atoi(pUserInput3);
+        breakpointPassed = 0;
+        if(!breakpoint){
+          printf("insert a number after 'break'\n");
+        }
+        bp_list *bpStruct = malloc(sizeof(bp_list));
+        bpStruct->line = breakpoint;
+        bpStruct->next = NULL;
+        if (bp_head)
+        {
+          bp_list *temp = bp_head;
+          while (temp->next)
+          {
+            temp = temp->next;
+          }
+          temp->next = bpStruct;
+        }
+        else
+        {
+          bp_head = malloc(sizeof(bp_list));
+          bp_head->line = 0;
+          bp_head->next = malloc(sizeof(bp_list));
+          bp_head->next->line = breakpoint;
+          bp_head->next->next = NULL;
+        }
+
+        printf("breakpoint set to line %d\n", breakpoint);
+      }
+      else
+        printf("you need to specify a number to set the break to\n");
+    }
+    else if (strcmp(pUserInput2, "remove") == 0)
+    { // remove breakpoint da fare
+      if (!bp_head)
+      {
+        bp_head = malloc(sizeof(bp_list));
+      }
+      bp_list *temp = bp_head;
+      if (temp)
+      {
+        if (!pUserInput3)
+        {
+          printf("a line needs to be specified to identify the breakpoint"); 
+        }
+        else
+        {
+          int line = atoi(pUserInput3);
+          while(temp->next)
+            {
+              if (temp->next->line == line)
+              {
+                bp_list* bpToFree = temp->next;
+                temp->next = bpToFree->next;
+                free(bpToFree);
+                return;
+              }
+              else
+                temp = temp->next;
+            }
+          printf("no breakpoints saved");
+        }
+      }
+      else
+        printf("no breakpoints");
+    }
+    else if (strcmp(pUserInput2, "removeAll") == 0)
+    { // rimuovi tutti i breakpoint
+      if (!bp_head)
+      {
+        bp_head = malloc(sizeof(bp_list));
+      }
+      bp_list* temp = bp_head;
+      while (temp->next)
+      {
+        bp_list* bpToFree = temp->next;
+        temp->next = temp->next->next;
+        free(bpToFree);
+      }
+      printf("removed all breakpoints");
+    }
+    else if (strcmp(pUserInput2, "run") == 0)
+    { // rimuovi tutti i breakpoint
+      run = 1;
+      return;
+    }
+
     else
     {
       printf("comando non riconosciuto\n");
@@ -613,7 +825,6 @@ char *charEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
 // funzione che attraversa l'albero ed esegue le funzioni associate al tipo int
 int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistory)
 {
-
   pANTLR3_COMMON_TOKEN tok = tree->getToken(tree);
   if (!scope || !scope->scope)
   {
@@ -834,7 +1045,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       int firstValue = (int)numberEvaluator(tree->getChild(tree, 0), scope, pHistory);
       int secondValue = (int)numberEvaluator(tree->getChild(tree, 1), scope, pHistory);
       printLine(tok);
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, tok);
       if (firstValue == secondValue)
       {
         return pTrue;
@@ -849,7 +1060,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       int firstValue = (int)numberEvaluator(tree->getChild(tree, 0), scope, pHistory);
       int secondValue = (int)numberEvaluator(tree->getChild(tree, 1), scope, pHistory);
       printLine(tok);
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, tok);
       if (firstValue != secondValue)
       {
         return pTrue;
@@ -864,7 +1075,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       int firstValue = numberEvaluator(tree->getChild(tree, 0), scope, pHistory);
       int secondValue = numberEvaluator(tree->getChild(tree, 1), scope, pHistory);
       printLine(tok);
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, tok);
       if (firstValue < secondValue)
       {
         return pTrue;
@@ -908,7 +1119,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       char *variableName = child1->getText(child1)->chars;
       hashInsertVar(variableName, variableType, pNull, scope, pHistory, true);
       printLine(child0->getToken(child0));
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, tok);
       return pTrue;
     }
     case POI_DEF:
@@ -924,7 +1135,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       printf("variable type = %s\n", variableType);
       hashInsertVar(variableName, variableType, pNull, scope, pHistory, true);
       printLine(child00->getToken(child00));
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, tok);
       return pTrue;
     }
     case EQ:
@@ -959,6 +1170,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       pANTLR3_BASE_TREE child00 = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
       char *variableName = child00->getText(child00)->chars;
       var_list *varL = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, false);
+      var_list *varLP = (var_list *)hashGetVaueVarPscope(variableName, pScope, -1, pHistory, false);
 
       char *type = (char *)varL->type;
       //string var(getText(getChild(tree, 0)));
@@ -1011,7 +1223,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         //sprintf(strVal, "%d", value);
         hashInsertVar(variableName, type, pValue, scope, pHistory, true);
         printLine(tok);
-        inputString(scope, pHistory);
+        inputString(scope, pHistory, tok);
         return pValue;
       }
 
@@ -1025,7 +1237,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         *pValue = value[1];
         hashInsertVar(variableName, type, pValue, scope, pHistory, true);
         printLine(tok);
-        inputString(scope, pHistory);
+        inputString(scope, pHistory, tok);
         return pValue;
       }
       else if (strcmp(type, "char*") == 0)
@@ -1039,7 +1251,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         gpointer pValue = g_strdup(value);
         hashInsertVar(variableName, type, pValue, scope, pHistory, true);
         printLine(tok);
-        inputString(scope, pHistory);
+        inputString(scope, pHistory, tok);
         return pValue;
       }
 
@@ -1096,7 +1308,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         }
 
         printLine(tok);
-        inputString(scope, pHistory);
+        inputString(scope, pHistory, tok);
         return pValue;
       }
       else
@@ -1259,7 +1471,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         temp = temp->next;
       }
       printLine(fName->getToken(fName));
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, fName->getToken(fName));
       if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
         return (int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
       if (strcmp(fReturnType, "char") == 0 || strcmp(fReturnType, "char*") == 0)
@@ -1271,7 +1483,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       gpointer retValue = evaluate(expr, pScope, pHistory, 0);
 
       printLine(expr->getToken(expr));
-      inputString(scope, pHistory);
+      inputString(scope, pHistory, expr->getToken(expr));
       return retValue;
     }
     case BLOCK:

@@ -18,6 +18,12 @@
  int *pError;
  void *returnVal;
 
+ int consecutive;
+ int breakpoint;
+
+int breakpoint ;
+int breakpointPassed ;
+int run ; //viene settato col comando "run" e manda avanti l'esecuzine del programma
 
 
 
@@ -105,7 +111,7 @@ void free_data(gpointer data);
 
   void printLine(pANTLR3_COMMON_TOKEN token);
 
-  void inputString(scope_tree * scope, History * *pHistory);
+  void inputString(scope_tree * scope, History * *pHistory, pANTLR3_COMMON_TOKEN token);
 
   char *charEvaluator(pANTLR3_BASE_TREE tree, scope_tree * scope, History * *pHistory);
 

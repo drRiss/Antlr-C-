@@ -42,18 +42,15 @@ declaration
     :   variable
     |   functionHeader ';'	-> ^(FUNC_DECL functionHeader)
     |   functionHeader block	-> ^(FUNC_DEF  functionHeader block)
-    |   functionCall -> ^(functionCall)
+    |   functionCall ';' -> ^(functionCall)
     |   cstat
     ;
 
 variable
     :   type declarator lc=';'	-> ^(VAR_DEF[$lc, "VAR_DEF"] type declarator)
     |   type declarator EQ expr ';'-> ^(EQ type declarator expr)
-    |   type declarator EQ functionCall -> ^(EQ type declarator functionCall)
     |   typepointer declarator lc=';' -> ^(POI_DEF[$lc, "POI_DEF"] typepointer declarator)
     |   typepointer declarator EQ expr ';'-> ^(EQ typepointer declarator expr)
-    |   typepointer declarator EQ functionCall -> ^(EQ typepointer declarator functionCall)
-
     ;
 
 declarator
@@ -66,7 +63,7 @@ functionHeader
     ;       
 
 functionCall
-    :   declarator lc='(' (aexpr ( ',' aexpr )* )? ')' ';' -> ^(FUNC_CALL[lc, "FUNC_CALL"] declarator aexpr* )
+    :   declarator lc='(' (aexpr ( ',' aexpr )* )? ')' -> ^(FUNC_CALL[lc, "FUNC_CALL"] declarator aexpr* )
     ;
 
 formalParameter
@@ -131,10 +128,10 @@ forStat
 
 assignStat
     :   ID EQ expr ';'-> ^(EQ ID expr)
-    |   ID EQ functionCall -> ^(EQ ID functionCall)
     ;
 
 expr:   condExpr
+    |   functionCall
     ;
 
 
