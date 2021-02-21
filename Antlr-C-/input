@@ -1,11 +1,23 @@
 
-int a = 5;
-int b = 6;
+int a = 6;
+int b = 5;
+
+if(a == b){
+    int wow = 10;
+}
 
 
 int* d = &b;
 
 int sum = 2;
+
+int due = 2;
+int sei = 6;
+
+while(due != sei){
+    due = due + 1;
+}
+
 
 int add(int a){
     return a+1;

@@ -570,7 +570,6 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
       run = 0; //esecuzione passo passo
       if (pUserInput3)
       {
-        printf("about to run %s istructions", pUserInput3);
         
         //dice di quante istruzioni avanzare
         consecutive = atoi(pUserInput3);
@@ -644,7 +643,6 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
       }
 
       printLine(history->subTree->getToken(history->subTree));
-      printf("input p\n");
     }
     else if (strcmp(pUserInput2, "print") == 0)
     {
@@ -1327,7 +1325,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       //caso if senza else
       pANTLR3_BASE_TREE childIFELSE = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       pANTLR3_BASE_TREE childIF = (pANTLR3_BASE_TREE)childIFELSE->getChild(childIFELSE, 0);
-
+      
       int *ifClauseValue = (int *)evaluate(childIF, pScope, pHistory, 1);
 
       //condizione dell'if è vera quindi svolgo il codice nell'if
@@ -1343,6 +1341,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         pANTLR3_BASE_TREE childELSE = (pANTLR3_BASE_TREE)childELSEIF->getChild(childELSEIF, 0);
         return evaluate(childELSE, pScope, pHistory, 0);
       }
+      return pNull;
     }
     case WHI_STAT:
     {
