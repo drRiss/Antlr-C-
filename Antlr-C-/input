@@ -1,42 +1,22 @@
+    int Number = 10;
+    int i = 1;
+    int j;
+    int Count; 
+ 
+ 	while (i <= Number){
+   		Count = 0;
+    	if(Number % i == 0){
+      		j = 1;
+      		while(j < i){
+      			if(i % j == 0){
+      				Count = Count + 1;
+				}
+				j = j + 1;
+			}
+			if(Count == 2){
+				printf(i);
+			} 
+      	}
+    	i = i + 1;
+   	}
 
-int a = 6;
-int b = 5;
-
-if(a == b){
-    int wow = 10;
-}
-
-
-int* d = &b;
-
-int sum = 2;
-
-int due = 2;
-int sei = 6;
-
-while(due != sei){
-    due = due + 1;
-}
-
-
-int add(int a){
-    return a+1;
-}
-
-int sum(int x, int z){
-    int sum = x + z;
-    return x;
-}
-
-
-int c; 
-
-int somma = sum(a, b);
-
-
-if(a == *d){
-    a = 7;
-}
-else{
-    a = 8;
-}

@@ -83,8 +83,7 @@ typepointer
 
 block
     :   lc='{'
-            variable*
-            cstat*
+            (variable | cstat)*
             returnStatement?
         '}'
         -> ^(BLOCK[$lc, "BLOCK"] variable* cstat* returnStatement?)
@@ -127,7 +126,8 @@ forStat
     ;
 
 assignStat
-    :   ID EQ expr ';'-> ^(EQ ID expr)
+    :   ID EQ expr ';' -> ^(EQ ID expr)
+    |   unaryID EQ expr ';' -> ^(EQ unaryID expr)
     ;
 
 expr:   condExpr
@@ -144,14 +144,21 @@ aexpr
     ;
 
 
+
+
+
 atom
     : ID
-    | unaryOperator ID -> ^(UN_OP unaryOperator ID)
+    | unaryID
     | INT
     | CHARACTER_LITERAL
     | STRING_LITERAL
     | '(' expr ')' -> expr
     ; 
+
+unaryID
+    :   unaryOperator ID -> ^(UN_OP unaryOperator ID)
+    ;
 
 unaryOperator
     :'&'
@@ -186,7 +193,9 @@ EQ   : '=' ;
 EQEQ : '==' ;
 NEQ : '!=' ;
 OPLT   : '<' ;
+LTEQ   : '<=' ;
 OPGT : '>' ;
+GTEQ: '>=' ;
 PLUS : '+' ;
 MINUS : '-' ;
 DIVI : '/' ;

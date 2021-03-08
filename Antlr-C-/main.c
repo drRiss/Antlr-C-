@@ -74,7 +74,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
   //
   if (argc < 2 || argv[1] == NULL)
   {
-    fName = (pANTLR3_UINT8) "./input"; // Note in VS2005 debug, working directory must be configured
+    fName = (pANTLR3_UINT8) "./input.c"; // Note in VS2005 debug, working directory must be configured
   }
   else
   {
