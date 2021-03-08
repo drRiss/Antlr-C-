@@ -174,7 +174,7 @@ int ANTLR3_CDECL main(int argc, char *argv[])
 
     pANTLR3_BASE_TREE rootTree = SimpleCAST.tree;
 
-    printf("Tree : %s\n\n", SimpleCAST.tree->toStringTree(SimpleCAST.tree)->chars);
+    //printf("Tree : %s\n\n", SimpleCAST.tree->toStringTree(SimpleCAST.tree)->chars);
     nodes = antlr3CommonTreeNodeStreamNewTree(SimpleCAST.tree, ANTLR3_SIZE_HINT);
 
       //hashtable per i valori associati alle variabili
