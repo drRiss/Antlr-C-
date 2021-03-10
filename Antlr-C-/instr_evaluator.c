@@ -1761,7 +1761,8 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       int k = tree->getChildCount(tree);
       int *r = NULL;
       if(returned==1)
-        returned =0;
+        returned = 0; //returned è settato a zero perchè è significativo
+                      //solo se cambia di valore dentro al for sotto, se era già uno non è significativo
       for (int i = 0; i < k; i++)
       {
         if(returned == 1){
