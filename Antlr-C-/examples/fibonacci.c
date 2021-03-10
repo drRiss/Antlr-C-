@@ -1,15 +1,13 @@
-int factorial(int n) {
-   if(n == 0) {
-      return 1;
-   } else {
-      return n * factorial(n-1);
-   }
-}
+
 
 int fibbonacci(int n) {
    if(n <= 0){
-      return 1;
-   } else {
+      return 0;
+   }
+   if(n == 1){
+       return 1;
+   }
+    else {
       return (fibbonacci(n-1) + fibbonacci(n-2));
    }
 }
@@ -22,7 +20,7 @@ int fibbonacci(int n) {
    printf("%d" , n);
 	
     while(i < n){
-        fib = fibbonacci(i);
+      fib = fibbonacci(i);
       printf("%d ",fib);   
       i = i + 1;            
    }

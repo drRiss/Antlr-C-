@@ -41,7 +41,7 @@ program
 declaration
     :   variable
     |   functionHeader ';'	-> ^(FUNC_DECL functionHeader)
-    |   functionHeader block	-> ^(FUNC_DEF  functionHeader block)
+    |   functionHeader block	-> ^(FUNC_DEF functionHeader block)
     |   functionCall ';' -> ^(functionCall)
     |   cstat
     ;
@@ -88,6 +88,7 @@ block
         '}'
         -> ^(BLOCK[$lc, "BLOCK"] variable* cstat* returnStatement?)
     ;
+
 
 returnStatement
     :

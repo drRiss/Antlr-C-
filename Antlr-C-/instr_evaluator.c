@@ -11,6 +11,7 @@ int *pFalse = &false;
 int *pError = &error;
 void *returnVal = NULL;
 
+int returned = 0; // necessario per uscire dalla funzione dopo un break
 int consecutive = 0;
 int breakpoint = 0;
 int breakpointPassed = 0;
@@ -619,6 +620,7 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
     else if (strcmp(pUserInput2, "p") == 0)
     {
       run = 0; //esecuzione passo passo
+      returned = 0;
 
       History *history = *pHistory;
       if (!history)
@@ -974,10 +976,15 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
       }
       printLine(fName->getToken(fName));
       inputString(scope, pHistory, fName->getToken(fName));
-      if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
-        return *(int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
-      else
+      if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0){
+        int toReturn = *(int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+        returned == 0;
+        return toReturn;
+        }
+      else{
+        printf("wrong return type of function");
         exit(0);
+        }
     }
     case PLUS:
     {
@@ -1380,10 +1387,12 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
           else if (strcmp(fReturnType, "int*") == 0)
           {
             int *pValue = (int *)evaluate(child1, pScope, pHistory, 0);
+            returned = 0;
           }
           else if (strcmp(fReturnType, "char*") || strcmp(fReturnType, "char"))
           {
             char *pValue = (char *)evaluate(child1, pScope, pHistory, 0);
+            returned = 0;
           }
         }
         else
@@ -1452,6 +1461,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
             return pError;
           }
           var_list *pValue = (var_list *)evaluate(child1, pScope, pHistory, 0);
+          returned = 0;
           //printf("test pValue int* func in line 1103 %s\n", pValue->name);
           hashInsertVar(variableName, type, pValue, scope, pHistory, true); //ispointer
         }
@@ -1648,7 +1658,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       else
         return pFalse;
     }
-    case FUNC_CALL:
+  case FUNC_CALL:
     {
       pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       char *fNameChar = fName->getText(fName)->chars;
@@ -1722,15 +1732,25 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       }
       printLine(fName->getToken(fName));
       inputString(scope, pHistory, fName->getToken(fName));
-      if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
-        return (int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+      if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0){
+        
+        returnVal = (int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+        returned = 0;
+
+        return returnVal;
+        }
       if (strcmp(fReturnType, "char") == 0 || strcmp(fReturnType, "char*") == 0)
-        return (char *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+      {
+        returnVal = (char *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+        returned = 0;
+        return returnVal;
+      }
     }
     case RET:
     {
       pANTLR3_BASE_TREE expr = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       gpointer retValue = evaluate(expr, pScope, pHistory, 0);
+      returned = 1; //controllato per uscire dalla funzione (vedi BLOCK)
 
       printLine(expr->getToken(expr));
       inputString(scope, pHistory, expr->getToken(expr));
@@ -1738,25 +1758,19 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     }
     case BLOCK:
     {
-      //devo togliere l'ultimo blocco history dato che conterrebbe tutto il blocco e non le singole istruzioni
-      /*History *temp = *pHistory;
-        *pHistory = temp->prev;
-        temp->prev->next = NULL;
-        free(temp);
-        */
       int k = tree->getChildCount(tree);
       int *r = NULL;
+      if(returned==1)
+        returned =0;
       for (int i = 0; i < k; i++)
       {
-        /*History *history = *pHistory;
-        while (history && history->next)
-        {
-          r = evaluate(history->next->subTree, &history->next->scopeTree, pHistory, 1);
-          printf("--------redoing historyy--------\n");
-          history = *pHistory;
-        }*/
+        if(returned == 1){
+          returned = 0;
+          break;
+        }
         r = evaluate(tree->getChild(tree, i), pScope, pHistory, 1);
       }
+      
       return r;
     }
     default:
