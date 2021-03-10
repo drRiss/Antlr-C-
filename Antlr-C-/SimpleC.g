@@ -131,7 +131,6 @@ assignStat
     ;
 
 expr:   condExpr
-    |   functionCall
     ;
 
 
@@ -153,6 +152,7 @@ atom
     | INT
     | CHARACTER_LITERAL
     | STRING_LITERAL
+    | functionCall
     | '(' expr ')' -> expr
     ; 
 

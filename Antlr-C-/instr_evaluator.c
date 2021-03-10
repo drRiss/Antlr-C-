@@ -915,6 +915,70 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
       }
       return *value;
     }
+    case FUNC_CALL:
+    {
+      pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
+      char *fNameChar = fName->getText(fName)->chars;
+      int nParams = tree->getChildCount(tree); //sttenzione in realtà nparams dice un numero pari al numero di parametri più uno
+
+      fun_def *function = (fun_def *)hashGetVaue(fNameChar, funcTable, NULL);
+      char *fReturnType = function->func_ret_type;
+      if (!function)
+      {
+        printf("function %s not found\n", fNameChar);
+        return 0;
+      }
+
+      function->scopeValues = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, freeVarList);
+      par_list *temp = function->parameters;
+      char *paramType;
+      char *paramName;
+      //inserimento nell'albero degli scope
+      scope_tree *scopeChild = malloc(sizeof(scope_tree));
+      scopeChild->parent = scope;
+      scopeChild->scope = function->scopeValues;
+      History *tempH = *pHistory;
+      tempH->scopeTree = scopeChild;
+
+      for (int i = 1; i < nParams; i++)
+      {
+        /* metti i parametri nello scope */
+        paramType = temp->type;
+        paramName = temp->name;
+        if (strcmp(paramType, "int") == 0)
+        {
+          int *paramValue = malloc(sizeof(int));
+          pANTLR3_BASE_TREE paramValueTree = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
+          *paramValue = numberEvaluator(paramValueTree, scopeChild, pHistory);
+          printf("paramtype: %s ", paramType);
+          printf("paramValue: %d\n", *paramValue);
+          hashInsertVar(paramName, paramType, paramValue, scopeChild, pHistory, false);
+        }
+        else if (strcmp(paramType, "int*") == 0)
+        {
+          int *paramValue = malloc(sizeof(int));
+          pANTLR3_BASE_TREE paramValueTree = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
+          paramValue = evaluate(paramValueTree, &scope, pHistory, 1); //da rivedere -> evaluatepointer
+          printf("paramtype: %s ", paramType);
+          printf("paramValue: %d\n", *paramValue);
+          hashInsertVar(paramName, paramType, paramValue, scopeChild, pHistory, false);
+        }
+        else if (strcmp(paramType, "char") == 0 || strcmp(paramType, "char*") == 0)
+        {
+          printf("paramtype: %s ", paramType);
+          char *paramValue = charEvaluator((pANTLR3_BASE_TREE)tree->getChild(tree, i), scope, pHistory);
+          printf("paramValue: %d\n", *paramValue);
+          hashInsertVar(paramName, paramType, paramValue, scopeChild, pHistory, false);
+        }
+        temp = temp->next;
+      }
+      printLine(fName->getToken(fName));
+      inputString(scope, pHistory, fName->getToken(fName));
+      if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0)
+        return *(int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
+      else
+        exit(0);
+    }
     case PLUS:
     {
       return numberEvaluator(tree->getChild(tree, 0), scope, pHistory) + numberEvaluator(tree->getChild(tree, 1), scope, pHistory);
@@ -1303,13 +1367,15 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
           if (!function)
           {
             printf("function %s not found\n", funName);
+            exit(0);
             return pError;
           }
           char *fReturnType = function->func_ret_type;
           if (strcmp(fReturnType, "int") == 0)
           {
             value = *(int *)evaluate(child1, pScope, pHistory, 0);
-            printf("func eq value: %d\n", value);
+            if(value)
+              printf("func eq value: %d\n", value);
           }
           else if (strcmp(fReturnType, "int*") == 0)
           {
