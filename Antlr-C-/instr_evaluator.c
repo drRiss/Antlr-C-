@@ -919,6 +919,12 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
     }
     case FUNC_CALL:
     {
+      //cancello l'ultima occorreenza di history in quanto un token fittizio
+      History *histDel = *pHistory;
+      histDel->prev->next = NULL;
+      *pHistory = histDel->prev;
+      free(histDel);
+      
       pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       char *fNameChar = fName->getText(fName)->chars;
       int nParams = tree->getChildCount(tree); //sttenzione in realtà nparams dice un numero pari al numero di parametri più uno
@@ -975,7 +981,7 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
         temp = temp->next;
       }
       printLine(fName->getToken(fName));
-      inputString(scope, pHistory, fName->getToken(fName));
+      //inputString(scope, pHistory, fName->getToken(fName));
       if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0){
         int toReturn = *(int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
         returned == 0;
@@ -1365,8 +1371,10 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
         //caso di assegnamento tramite una funzione
         int value;
+        int fun = 0;
         if (child1->getToken(child1)->type == FUNC_CALL)
         {
+          fun = 1;
           pANTLR3_BASE_TREE funNameTree = (pANTLR3_BASE_TREE)child1->getChild(child1, 0);
           char *funName = funNameTree->getText(funNameTree)->chars;
 
@@ -1406,7 +1414,8 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         //sprintf(strVal, "%d", value);
         hashInsertVar(variableName, type, pValue, scope, pHistory, true);
         printLine(tok);
-        inputString(scope, pHistory, tok);
+        if(fun == 0)
+          inputString(scope, pHistory, tok);
         return pValue;
       }
 
@@ -1464,6 +1473,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
           returned = 0;
           //printf("test pValue int* func in line 1103 %s\n", pValue->name);
           hashInsertVar(variableName, type, pValue, scope, pHistory, true); //ispointer
+          printLine(tok);
         }
 
         else if (child1->getToken(child1)->type == UN_OP)
@@ -1513,6 +1523,8 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
           //printf("pvalue unop; %d\n", *(int *)pValue->prev->value);
           hashInsertVar(variableName, type, pValue, scope, pHistory, true); //ispointer
           }
+        printLine(tok);
+        inputString(scope, pHistory, tok);
         }
         else if (child1->getToken(child1)->type == ID)
         {//da mettere riga 11
@@ -1547,11 +1559,13 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
 
           //lo inserisco come oggetto puntato dal puntatore a sinistra dell'uguale
           hashInsertVar(variableName, type, pValue, scope, pHistory, true); //ispointer
+        
         }
-        }
-
         printLine(tok);
         inputString(scope, pHistory, tok);
+        }
+
+
         return pValue;
       }
       else
@@ -1660,6 +1674,12 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     }
   case FUNC_CALL:
     {
+      //cancello l'ultima occorreenza di history in quanto un token fittizio
+      History *histDel = *pHistory;
+      histDel->prev->next = NULL;
+      *pHistory = histDel->prev;
+      free(histDel);
+
       pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       char *fNameChar = fName->getText(fName)->chars;
       int nParams = tree->getChildCount(tree); //sttenzione in realtà nparams dice un numero pari al numero di parametri più uno
@@ -1731,7 +1751,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         temp = temp->next;
       }
       printLine(fName->getToken(fName));
-      inputString(scope, pHistory, fName->getToken(fName));
+      //inputString(scope, pHistory, fName->getToken(fName));
       if (strcmp(fReturnType, "int") == 0 || strcmp(fReturnType, "int*") == 0){
         
         returnVal = (int *)evaluate(function->treeBody, &scopeChild, pHistory, 0);
