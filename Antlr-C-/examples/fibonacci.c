@@ -13,7 +13,7 @@ int fibbonacci(int n) {
 }
 
 
-    int n = 5;
+    int n = 7;
     int i = 0;
 	int fib;
     printf("fibonacci del numero:");

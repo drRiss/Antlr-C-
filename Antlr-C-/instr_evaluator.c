@@ -397,7 +397,7 @@ gpointer hashGetVaueVar(char *key, scope_tree *scopeTree, int position, History 
     }
     else
     {
-      printf("%s value not found\n", key);
+      printf("%s values not found\n", key);
       return NULL;
     }
   }
@@ -459,7 +459,7 @@ gpointer hashGetVaueVarPscope(char *key, scope_tree **pScopeTree, int position, 
     }
     else
     {
-      printf("%s value not found\n", key);
+      printf("%s value not found in scope\n", key);
       return NULL;
     }
   }
@@ -634,7 +634,7 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
         do
         {
           char *varWritten = temp->name;
-          printf("varWritten: %s\n", varWritten);
+          //printf("varWritten: %s\n", varWritten);
 
           var_list *varList = (var_list *)hashGetVaueVar(varWritten, history->scopeTree, -1, pHistory, false);
           if (varList)
@@ -654,15 +654,21 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
         *pHistory = history->prev;
         history = *pHistory;
       }
+      pANTLR3_BASE_TREE temprint;
 
-      printLine(history->subTree->getToken(history->subTree));
+      if(history->subTree->getToken(history->subTree)->type == RET && history->subTree->getChildCount(history->subTree) > 0){
+        temprint = history->subTree->getChild(history->subTree, 0);
+        printLine(temprint->getToken(temprint));
+      }
+      else{
+      printLine(history->subTree->getToken(history->subTree));}
     }
     else if (strcmp(pUserInput2, "print") == 0)
     {
       char *varType;
       if (userInput3[0] != '\0')
       {
-        var_list *varList = (var_list *)hashGetVaueVar(userInput3, scope, -1, pHistory, false);
+        var_list *varList = (var_list *)hashGetVaueVar(userInput3, (*pHistory)->scopeTree, -1, pHistory, false);
         if (varList)
         {
           varType = (char *)varList->type;
@@ -927,7 +933,7 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
       
       pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       char *fNameChar = fName->getText(fName)->chars;
-      int nParams = tree->getChildCount(tree); //sttenzione in realtà nparams dice un numero pari al numero di parametri più uno
+      int nParams = tree->getChildCount(tree); //attenzione in realtà nparams dice un numero pari al numero di parametri più uno
 
       fun_def *function = (fun_def *)hashGetVaue(fNameChar, funcTable, NULL);
       char *fReturnType = function->func_ret_type;
@@ -1389,8 +1395,8 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
           if (strcmp(fReturnType, "int") == 0)
           {
             value = *(int *)evaluate(child1, pScope, pHistory, 0);
-            if(value)
-              printf("func eq value: %d\n", value);
+            //if(value)
+              //printf("func eq value: %d\n", value);
           }
           else if (strcmp(fReturnType, "int*") == 0)
           {
@@ -1604,7 +1610,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     }
     case WHI_STAT:
     {
-      //cancello l'ultima occorrenza di history in quanto si tratta di un token immaginario
+      //cancello questa occorrenza di history in quanto si tratta di un token immaginario
       History *histDel = *pHistory;
       histDel->prev->next = NULL;
       *pHistory = histDel->prev;
@@ -1648,7 +1654,9 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         pFun->funName = funNameChar;
 
         int k = header->getChildCount(header);
-        printf("number of parameters: %d \n", k - 2);
+
+        //k -2 = number of parameters
+        //printf("number of parameters: %d \n", k - 2);
 
         par_list *parameter_list_head = NULL;
         for (int i = 2; i < k; i++)
@@ -1715,8 +1723,8 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       scope_tree *scopeChild = malloc(sizeof(scope_tree));
       scopeChild->parent = *pScope;
       scopeChild->scope = function->scopeValues;
-      History *tempH = *pHistory;
-      tempH->scopeTree = scopeChild;
+      //History *tempH = *pHistory;
+      //tempH->scopeTree = scopeChild;
 
       for (int i = 1; i < nParams; i++)
       {
