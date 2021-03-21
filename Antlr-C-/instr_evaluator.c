@@ -156,24 +156,8 @@ void free_function(gpointer function)
   g_free(func);
 }
 
-//da fare//
-void freeScopeTree(scope_tree *root)
-{
-}
-
 GHashTable *funcTable = NULL;
-/*  History *isHistory = malloc(sizeof(History));
-  isHistory->subTree = NULL;
-  isHistory->written = NULL;
-  isHistory->read = NULL;
-  isHistory->token = NULL;
-  isHistory->prev = NULL;
-  isHistory->next = NULL;
-
-  scope_tree *scopeTree = malloc(sizeof(scope_tree));
-  scopeTree->parent = NULL;
-  scopeTree->scope = valuesTable;
-*/
+//funzione per inserire l'oggetto nella lista di variabili modificate di history
 void insertWrittenHistory(History **pHistory, struct Variable *varHistory)
 {
   History *history = *pHistory;
@@ -199,9 +183,8 @@ void insertWrittenHistory(History **pHistory, struct Variable *varHistory)
   }
 }
 
-//funzione per inserire chiave e valore nella hashtable scelta, se la chiave e il valore
-//sono entrambi char* utilizzare hashInsertChar
-void hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
+//funzione per inserire chiave e valore nella hashtable scelta (versione base utilizzata solo per inserire definizioni di funzioni)
+ hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
 {
   gchar *key = g_strdup(keyChar);
   if (!hashTable)
@@ -218,7 +201,8 @@ void hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
     g_hash_table_insert(hashTable, key, value);
   }
 }
-
+//funzione per inserire chiave e valore nella hashtable scelta, se l'ultimo parametro passato in input è true (1) viene salvato il
+//valore in history
 void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeTree, History **pHistory, int save)
 {
   History *history = *pHistory;
@@ -229,7 +213,6 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
     return;
   }
   struct Variable *pVar = NULL;
-  //da cambiare questa condizione con la ricerca dello scope corretto
   if (!g_hash_table_contains(scopeTree->scope, (gconstpointer)key))
   { //primo inserimento della variabile
     pVar = malloc(sizeof(struct Variable));
@@ -242,7 +225,7 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
     pVar->pointsTo = NULL;
     pVar->pointsToPos = -1;
 
-    //caso in cui la variabile sia di tipo char, bisogna duplicarla perchè non venga persa
+    //nel caso in cui la variabile sia di tipo char, bisogna duplicarla perchè non venga persa
     if (!value)
     {
 
@@ -282,9 +265,8 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
     }
     g_hash_table_insert(scopeTree->scope, key, pVar);
   }
-  else
+  else    //variabile già presente valore da aggiungere
   {
-    //variabile già presente valore da aggiungere
     var_list *list_head = (var_list *)g_hash_table_lookup(scopeTree->scope, (gconstpointer)key);
     if (!list_head)
     {
@@ -333,11 +315,9 @@ void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeT
   }
   if (save)
     insertWrittenHistory(pHistory, pVar);
-
-  var_list *intero = (var_list *)hashGetVaueVar(key, scopeTree, 0, pHistory, 0);
 }
 
-//funzione che ritorna il valore della chiave riportata nella hashtable
+//funzione che ritorna il valore della chiave riportata nella hashtable (versione base)
 gpointer hashGetVaue(char *key, GHashTable *hashTable, GHashTable *globalHashTable)
 {
   GHashTable *scope = hashTable;
@@ -372,7 +352,9 @@ gpointer hashGetVaue(char *key, GHashTable *hashTable, GHashTable *globalHashTab
     return NULL;
   }
 }
-//da aggiungere un bool che indica se vuole prendere il puntatore o il valore puntato ed eventualmente ritornare quello
+//funzione che ritorna il valore della chiave riportata nella hashtable (versione avanzata che puo salvare in history se
+// la variabile è stata letta se l'ultimo parametro è true)
+
 gpointer hashGetVaueVar(char *key, scope_tree *scopeTree, int position, History **pHistory, int save)
 {
   History *history = *pHistory;
@@ -406,65 +388,6 @@ gpointer hashGetVaueVar(char *key, scope_tree *scopeTree, int position, History 
   {
   }
 
-  if (save)
-  {
-    if (!history->read)
-    {
-      var_list *tempV = malloc(sizeof(var_list));
-      tempV->name = key;
-      tempV->type = valueList->type;
-      tempV->position = valueList->prev->position;
-      tempV->next = tempV;
-      tempV->prev = tempV;
-      history->read = tempV;
-    }
-    else
-    { //inserisco il valore in coda
-      var_list *tempV = malloc(sizeof(var_list));
-      tempV->name = key;
-      tempV->type = valueList->type;
-      tempV->position = valueList->prev->position;
-      tempV->next = history->read;
-      tempV->prev = history->read->prev;
-      history->read->prev = tempV;
-      tempV->prev->next = tempV;
-    }
-  }
-  return valueList;
-}
-
-gpointer hashGetVaueVarPscope(char *key, scope_tree **pScopeTree, int position, History **pHistory, int save)
-{
-  scope_tree *scopeTree = *pScopeTree;
-  History *history = *pHistory;
-  GHashTable *scope = scopeTree->scope;
-  if (!scopeTree || !scopeTree->scope)
-  {
-    printf("hashGetVaue: hashtable is null\n");
-    return NULL;
-  }
-  //cerco nell'albero se esiste il valore della chiave
-  scope_tree *temp = scopeTree;
-
-  while (!g_hash_table_contains(temp->scope, (gconstpointer)key))
-  {
-    if (temp->parent)
-    {
-      temp = temp->parent;
-
-      if (g_hash_table_contains(temp->scope, (gconstpointer)key))
-      {
-        scope = temp->scope;
-      }
-    }
-    else
-    {
-      printf("%s value not found in scope\n", key);
-      return NULL;
-    }
-  }
-
-  var_list *valueList = (var_list *)g_hash_table_lookup(scope, (gconstpointer)key);
   if (save)
   {
     if (!history->read)
@@ -536,11 +459,11 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
   if (consecutive > 0)
   {
     consecutive = consecutive - 1; //sono state richieste n istruzioni consecutive quindi continuo
-    //senza richiedere input
+                                 //senza richiedere input
     return;
   }
 
-  if (run)
+  if (run)//variabile globale settata true se l'utente ha lanciato il comando relativo
   {
     int lineNumber = (int)token->line; //linea attuale raggiunta dal programma
     int found = 0;                     //flag che si attiva se viene incontrata una linea di un breakpoint
@@ -563,7 +486,7 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
       return;
     }
   }
-
+  //richiesta dell'input, che possono essere fino a tre parole
   char userInput1[50];
   char *pUserInput1 = userInput1;
   char userInput2[25];
@@ -597,9 +520,7 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
       {
         while (history && history->next)
         {
-          //printf("--------redoing historyy--------\n");
           evaluate(history->next->subTree, &history->next->scopeTree, pHistory, 1);
-          //printf("--------historyy redone--------\n");
           history = *pHistory;
         }
       }
@@ -1361,8 +1282,6 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       //caso di assegnamento
       var_list *varL = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, false);
 
-      // var_list *varLP = (var_list *)hashGetVaueVarPscope(variableName, pScope, -1, pHistory, false);
-
       char *type = (char *)varL->type;
       //string var(getText(getChild(tree, 0)));
       if (!type)
@@ -1463,7 +1382,6 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         //printf("child1 %s\n", child1->toStringTree(child1)->chars);
         //o idp o &variabile o puntatore alla variabile
         //1)
-        //da rivedere
         if (child1->getToken(child1)->type == FUNC_CALL)
         {
           pANTLR3_BASE_TREE funNameTree = (pANTLR3_BASE_TREE)child1->getChild(child1, 0);
@@ -1504,8 +1422,6 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
               exit(0);
             }
             var_list *pointedRHS = (var_list *)hashGetVaueVar(pointerValueRHS->prev->pointsTo, scope, -1, pHistory, true);
-
-            //*pValue = *(var_list *)hashGetVaueVar(pointerValue->prev->pointsTo, scope, -1, pHistory, true);
             var_list *pointerValueLHS = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, true);
                   
             if(!pointerValueLHS->prev->pointsTo){
@@ -1533,7 +1449,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         inputString(scope, pHistory, tok);
         }
         else if (child1->getToken(child1)->type == ID)
-        {//da mettere riga 11
+        {
           char *rhs_id = child1->getText(child1)->chars;
           var_list *pointerValue = (var_list *)hashGetVaueVar(rhs_id, scope, -1, pHistory, true);
           *pValue = *(var_list *)hashGetVaueVar(rhs_id, scope, -1, pHistory, true);
@@ -1543,7 +1459,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
               printf("errore di derefernziazione nel codice2\n");
               exit(0);
             }
-            //malloc??????
+
            var_list * pointerLHS = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, true);
             
             if(!pointerLHS->prev->pointsTo){
@@ -1555,23 +1471,16 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
             int rhsValue = numberEvaluator(child1, scope, pHistory);
             int *pValue = malloc(sizeof(int));
             *pValue = rhsValue;
-            hashInsertVar(pointedLHS, "int", pValue, scope, pHistory, true); //ispointer
-
-
+            hashInsertVar(pointedLHS, "int", pValue, scope, pHistory, true);
           }
           else{
-          //prendo la variabile a cui punta il puntatore a destra dell'uguale
           //printf("%s\n",rhs_id );
-
-          //lo inserisco come oggetto puntato dal puntatore a sinistra dell'uguale
-          hashInsertVar(variableName, type, pValue, scope, pHistory, true); //ispointer
+          hashInsertVar(variableName, type, pValue, scope, pHistory, true); 
         
         }
         printLine(tok);
         inputString(scope, pHistory, tok);
         }
-
-
         return pValue;
       }
       else
@@ -1628,7 +1537,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     }
     case FUNC_DEF:
     {
-      //funcTable come variable globale(da passa recome parametro se si sposta)
+      //funcTable come variable globale
       //cancello history in quanto non è necessario rifare questa parte
       History *histDel = *pHistory;
       histDel->prev->next = NULL;
@@ -1690,7 +1599,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
 
       pANTLR3_BASE_TREE fName = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       char *fNameChar = fName->getText(fName)->chars;
-      int nParams = tree->getChildCount(tree); //sttenzione in realtà nparams dice un numero pari al numero di parametri più uno
+      int nParams = tree->getChildCount(tree); //attenzione in realtà nparams dice un numero pari al numero di parametri più uno
       //funzione autonoma di print
       if (strcmp(fNameChar, "printf") == 0)
       {
@@ -1705,7 +1614,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         printf("%s\n", charToPrint);
         inputString(scope, pHistory, fName->getToken(fName));
         return NULL;
-      } //
+      } 
 
       fun_def *function = (fun_def *)hashGetVaue(fNameChar, funcTable, NULL);
       char *fReturnType = function->func_ret_type;
@@ -1813,17 +1722,11 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     int *r = NULL;
     for (int i = 0; i < k; i++)
     {
-      /*
-      while (history && history->next)
-      {
-        r = evaluate(history->next->subTree, &history->next->scopeTree, pHistory, 1);
-        printf("--------redoing historyy--------\n");
-        history = *pHistory;
-      }*/
       pANTLR3_BASE_TREE child = tree->getChild(tree, i);
       r = evaluate(child, pScope, pHistory, 1);
 
       History *history = *pHistory;
+      //questo codice commentato stampa i valori di salvati in history written
       /*if (history && history->read)
       {
         History *tempwhiler = history;

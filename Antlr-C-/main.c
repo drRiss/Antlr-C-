@@ -173,12 +173,14 @@ int ANTLR3_CDECL main(int argc, char *argv[])
     //codice relativo alla parte sequenziale
 
     pANTLR3_BASE_TREE rootTree = SimpleCAST.tree;
-
+    
+    //stampa l'albero sintattico a inizio programma
     printf("Tree : %s\n\n", SimpleCAST.tree->toStringTree(SimpleCAST.tree)->chars);
+
     nodes = antlr3CommonTreeNodeStreamNewTree(SimpleCAST.tree, ANTLR3_SIZE_HINT);
 
-      //hashtable per i valori associati alle variabili
-     GHashTable *valuesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
+    //hashtable per i valori associati alle variabili
+    GHashTable *valuesTable = g_hash_table_new_full(g_str_hash, g_str_equal, free_data, free_data);
  
 
     History *isHistory = malloc(sizeof(History));
