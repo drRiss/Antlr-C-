@@ -184,7 +184,7 @@ void insertWrittenHistory(History **pHistory, struct Variable *varHistory)
 }
 
 //funzione per inserire chiave e valore nella hashtable scelta (versione base utilizzata solo per inserire definizioni di funzioni)
- hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
+ void hashInsert(char *keyChar, gpointer value, GHashTable *hashTable)
 {
   gchar *key = g_strdup(keyChar);
   if (!hashTable)
@@ -201,6 +201,7 @@ void insertWrittenHistory(History **pHistory, struct Variable *varHistory)
     g_hash_table_insert(hashTable, key, value);
   }
 }
+
 //funzione per inserire chiave e valore nella hashtable scelta, se l'ultimo parametro passato in input è true (1) viene salvato il
 //valore in history
 void hashInsertVar(char *keyChar, char *type, gpointer value, scope_tree *scopeTree, History **pHistory, int save)
@@ -675,7 +676,7 @@ void inputString(scope_tree *scope, History **pHistory, pANTLR3_COMMON_TOKEN tok
         printf("you need to specify a number to set the break to\n");
     }
     else if (strcmp(pUserInput2, "remove") == 0)
-    { // remove breakpoint da fare
+    { 
       if (!bp_head)
       {
         bp_head = malloc(sizeof(bp_list));
@@ -816,17 +817,10 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
     }
     case UN_OP:
     {
-      //da fare caso con '*' dereferenziazione
-      pANTLR3_BASE_TREE unop = (pANTLR3_BASE_TREE)tree->getChild(tree, 0); //controllo se si tratta di & o *
-
+      pANTLR3_BASE_TREE unop = (pANTLR3_BASE_TREE)tree->getChild(tree, 0);
       pANTLR3_BASE_TREE rhs_id_tree = (pANTLR3_BASE_TREE)tree->getChild(tree, 1); //controllo se si tratta di & o *
+      
       char *rhs_id = rhs_id_tree->getText(rhs_id_tree)->chars;
-
-      /*if (strcmp(unop->getText(unop)->chars, "&") == 0)
-      {
-        return rhs_id;
-        //printf("wrong type assigned to int at line %d/n", *(int *)unop->getToken(unop)->getLine);
-      }*/
       var_list *varL = (var_list *)hashGetVaueVar(rhs_id, scope, -1, pHistory, true);
       if (!varL->isPointer)
       {
@@ -840,7 +834,6 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
       if (!value)
       {
         printf("%s value is null or not initializedu\n", rhs_id);
-        //return 0;
       }
       return *value;
     }
@@ -877,7 +870,7 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
 
       for (int i = 1; i < nParams; i++)
       {
-        /* metti i parametri nello scope */
+        /* mette i parametri nello scope */
         paramType = temp->type;
         paramName = temp->name;
         if (strcmp(paramType, "int") == 0)
@@ -893,7 +886,7 @@ int numberEvaluator(pANTLR3_BASE_TREE tree, scope_tree *scope, History **pHistor
         {
           int *paramValue = malloc(sizeof(int));
           pANTLR3_BASE_TREE paramValueTree = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
-          paramValue = evaluate(paramValueTree, &scope, pHistory, 1); //da rivedere -> evaluatepointer
+          paramValue = evaluate(paramValueTree, &scope, pHistory, 1);
           printf("paramtype: %s ", paramType);
           printf("paramValue: %d\n", *paramValue);
           hashInsertVar(paramName, paramType, paramValue, scopeChild, pHistory, false);
@@ -966,14 +959,9 @@ void addEnd(par_list **head, char *type, char *name)
   return;
 }
 
-//funzione principale che attraversa l'albero e gestisce ogni azione
 int returnValue;
 
-void print(char *input)
-{
-  printf("%s\n", input);
-}
-
+//funzione principale che attraversa l'albero e gestisce ogni azione
 void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, int saveHistory)
 {
   scope_tree *scope = *pScope;
@@ -1036,12 +1024,10 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     case INT:
     {
       //printf("token data int: %s\n", &tok->input->nextChar);
-      //const char *s = tree->getText(tree)->chars;
       int value = numberEvaluator(tree, scope, pHistory);
       returnVal = &value;
       return returnVal;
     }
-
     case CHARACTER_LITERAL:
     {
       return tree->getText(tree)->chars;
@@ -1053,18 +1039,16 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
     case ID:
     {
       char *var = tree->getText(tree)->chars;
-      //check type
       var_list *varL = (var_list *)hashGetVaueVar(var, scope, -1, pHistory, true);
       if (!varL)
       {
         printf("no values for %s found\n", var);
       }
-
       return varL->prev->value;
     }
     case UN_OP:
     {
-      //dcontrollo '*' dereferenziazione
+      //controllo '*' dereferenziazione
       pANTLR3_BASE_TREE unop = (pANTLR3_BASE_TREE)tree->getChild(tree, 0); //controllo se si tratta di & o *
 
       pANTLR3_BASE_TREE rhs_id_tree = (pANTLR3_BASE_TREE)tree->getChild(tree, 1); //controllo se si tratta di & o *
@@ -1281,9 +1265,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       }
       //caso di assegnamento
       var_list *varL = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, false);
-
       char *type = (char *)varL->type;
-      //string var(getText(getChild(tree, 0)));
       if (!type)
       {
         printf("error, no type found for variable\n");
@@ -1292,7 +1274,6 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
       if (strcmp(type, "int") == 0)
       {
         //da rivedere assegnamento tramite funzione per i tipi non int
-
         pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
         //caso di assegnamento tramite una funzione
         int value;
@@ -1317,18 +1298,12 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
             //if(value)
               //printf("func eq value: %d\n", value);
           }
-          else if (strcmp(fReturnType, "int*") == 0)
-          {
-            int *pValue = (int *)evaluate(child1, pScope, pHistory, 0);
-            returned = 0;
-          }
-          else if (strcmp(fReturnType, "char*") || strcmp(fReturnType, "char"))
-          {
-            char *pValue = (char *)evaluate(child1, pScope, pHistory, 0);
-            returned = 0;
+          else {
+              printf("wrong type assigned to variable from function %s\n", funName);
+              exit(0);
           }
         }
-        else
+        else//caso di assegnamento normale
         {
           value = numberEvaluator(child1, scope, pHistory);
         }
@@ -1336,14 +1311,12 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         int *pValue = malloc(sizeof(int));
         *pValue = value;
         //printf("equation right value : %d\n", *pValue);
-        //sprintf(strVal, "%d", value);
         hashInsertVar(variableName, type, pValue, scope, pHistory, true);
         printLine(tok);
-        if(fun == 0)
+        if(fun == 0)//se viene incontrata una funzione si passa direttamente alla prima linea della funzione
           inputString(scope, pHistory, tok);
         return pValue;
       }
-
       else if (strcmp(type, "char") == 0)
       {
         pANTLR3_BASE_TREE child1 = (pANTLR3_BASE_TREE)tree->getChild(tree, i + 1);
@@ -1371,7 +1344,6 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         inputString(scope, pHistory, tok);
         return pValue;
       }
-
       else if (strcmp(type, "int*") == 0)
       {
         //si aspetta un puntatore come rhs
@@ -1459,9 +1431,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
               printf("errore di derefernziazione nel codice2\n");
               exit(0);
             }
-
            var_list * pointerLHS = (var_list *)hashGetVaueVar(variableName, scope, -1, pHistory, true);
-            
             if(!pointerLHS->prev->pointsTo){
               printf("errore di derefernziazione nel codice1\n");
               exit(0);
@@ -1653,7 +1623,7 @@ void *evaluate(pANTLR3_BASE_TREE tree, scope_tree **pScope, History **pHistory, 
         {
           int *paramValue = malloc(sizeof(int));
           pANTLR3_BASE_TREE paramValueTree = (pANTLR3_BASE_TREE)tree->getChild(tree, i);
-          paramValue = evaluate(paramValueTree, pScope, pHistory, 1); //da rivedere -> evaluatepointer
+          paramValue = evaluate(paramValueTree, pScope, pHistory, 1); 
           printf("paramtype: %s ", paramType);
           printf("paramValue: %d\n", *paramValue);
           hashInsertVar(paramName, paramType, paramValue, scopeChild, pHistory, false);
